@@ -1,416 +1,445 @@
 # Docuvra
 
-Docuvra is a simple document viewer MVP for uploading, versioning, previewing, downloading, and printing documents.
+<p align="center">
+  <b>Modern Document Viewer & Collaboration Platform</b><br/>
+  Upload • Preview • Compare • Annotate • Collaborate
+</p>
 
-## Features
+<p align="center">
 
-- Upload documents up to 50 MB
-- Store original files on the Windows local file system
-- Store document metadata in PostgreSQL
-- Store a PostgreSQL `BYTEA` backup copy of every uploaded file
-- Maintain up to 5 versions per document
-- View PDF files page-by-page using PDF.js
-- View XLS, XLSX, and CSV files as read-only HTML spreadsheets
-- Add comments to spreadsheet cells
-- Download document versions
-- Print PDF documents from the viewer
-- Restore a missing local file from the PostgreSQL backup copy
+![Java](https://img.shields.io/badge/Java-21-orange)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.x-brightgreen)
+![Angular](https://img.shields.io/badge/Angular-20-red)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue)
+![PDF.js](https://img.shields.io/badge/PDF.js-Viewer-orange)
+![License](https://img.shields.io/badge/license-MIT-green)
 
-## Tech Stack
+</p>
 
-- Java 21
-- Spring Boot
-- PostgreSQL
-- Flyway
-- Angular
-- PDF.js
-- Apache POI
-- Apache Commons CSV
+---
 
-## Prerequisites
+# Overview
 
-- Java 21
-- Maven
-- Node.js
-- npm
-- Angular CLI
-- PostgreSQL
-- Docker Desktop
+**Docuvra** is a modern browser-based document viewer and collaboration platform built to manage, preview, compare, annotate, and collaborate on enterprise documents directly from a web application.
 
-## Run with Docker Compose
+It supports secure file storage, document versioning, PDF preview, Office conversion, Excel spreadsheet viewing, annotations, threaded comments, mentions, role-based access, and document collaboration workflows.
 
-From the project root:
+---
 
-```powershell
-docker compose -f docker/docker-compose.yml up --build
-```
+# Features
 
-Detached:
+## Document Upload & Versioning
 
-```powershell
-docker compose -f docker/docker-compose.yml up -d --build
-```
+* Upload documents up to **50 MB**
+* Maintain up to **5 versions** per document
+* Upload new version against existing document
+* Download any version
+* Delete document/version
+* File metadata stored in PostgreSQL
+* Original file backup stored in PostgreSQL `BYTEA`
 
-Stop:
+---
 
-```powershell
-docker compose -f docker/docker-compose.yml down
-```
+## Universal Document Viewer
 
-Stop and remove volumes:
+Supports:
 
-```powershell
-docker compose -f docker/docker-compose.yml down -v
-```
+### PDF
 
-View logs:
+* Page-by-page viewing using **PDF.js**
+* Zoom in / Zoom out
+* Fit width
+* Pagination
+* Print
+* Download
 
-```powershell
-docker compose -f docker/docker-compose.yml logs -f backend
-docker compose -f docker/docker-compose.yml logs -f frontend
-docker compose -f docker/docker-compose.yml logs -f postgres
-```
+---
 
-Docker services:
+## Office Document Preview
 
-- PostgreSQL: `postgres:16`
-- Backend: Spring Boot on Java 21
-- Frontend: Angular static build served by Nginx
+Supported:
 
-Docker volumes:
+* DOC
+* DOCX
+* PPT
+* PPTX
+* TXT
+* RTF
+* ODT
+* ODP
 
-- `docuvra_postgres_data:/var/lib/postgresql/data`
-- `docuvra_uploads:/app/uploads`
+Converted on-demand to PDF using:
 
-Docker environment:
+* **LibreOffice / OpenOffice** (Windows/Linux)
 
-```text
-SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/docuvra
-SPRING_DATASOURCE_USERNAME=docuvra
-SPRING_DATASOURCE_PASSWORD=docuvra
-DOCUVRA_STORAGE_BASE_PATH=/app/uploads
-```
+---
 
-## PostgreSQL Setup
+## Image Preview
 
-Create the database:
+Supported:
 
-```sql
-CREATE DATABASE docuvra;
-```
+* JPG
+* JPEG
+* PNG
+* BMP
+* GIF
+* TIFF
+* WEBP
 
-Create or choose a PostgreSQL user that can connect to the `docuvra` database, then set the backend environment variables.
+Converted to PDF using:
 
-PowerShell example:
+* **ImageMagick**
 
-```powershell
-$env:SPRING_DATASOURCE_URL="jdbc:postgresql://localhost:5432/docuvra"
-$env:SPRING_DATASOURCE_USERNAME="docuvra"
-$env:SPRING_DATASOURCE_PASSWORD="docuvra"
-$env:DOCUVRA_STORAGE_BASE_PATH="C:/docuvra/uploads"
-```
+---
 
-On Windows, start the PostgreSQL service if it is not already running:
+## Excel Spreadsheet Viewer
 
-```powershell
-Start-Service postgresql-x64-18
-```
+Excel files are rendered directly in browser (not converted to PDF).
 
-If your local PostgreSQL service uses another port, update `SPRING_DATASOURCE_URL`. Example:
+Supported:
 
-```powershell
-$env:SPRING_DATASOURCE_URL="jdbc:postgresql://localhost:5433/docuvra"
-```
+* XLS
+* XLSX
+* CSV
 
-## Backend Setup
+Features:
 
-```powershell
-cd backend
-mvn clean install
-mvn spring-boot:run
-```
+* read-only HTML spreadsheet view
+* multiple sheet tabs
+* full workbook view
+* scrollable rows/columns
+* cell comments
+* comment threads per selected cell
 
-Flyway runs automatically on startup and creates the required tables.
+---
 
-## Frontend Setup
+# Annotation & Markup
 
-```powershell
-cd frontend
-npm install
-npm start
-```
+Supported annotation tools:
 
-## Local URLs
+* Highlight
+* Comment
+* Rectangle
+* Freehand Draw
+* Underline
+* Strike-through
 
-- Frontend: `http://localhost:4200`
-- Backend API: `http://localhost:8080/api`
-- Swagger: `http://localhost:8080/swagger-ui/index.html`
-- Health: `http://localhost:8080/actuator/health`
-- PostgreSQL: `localhost:5432`
-- PostgreSQL database: `docuvra`
-- PostgreSQL username: `docuvra`
-- PostgreSQL password: `docuvra`
+Features:
 
-## Windows File Storage
+* create annotation on PDF
+* threaded comments
+* reply to comment
+* @mention users
+* notification badge
+* comment ↔ annotation linking
+* render saved annotations on reload
 
-Default local storage path:
+---
 
-```text
-C:/docuvra/uploads
-```
+# Document Compare
 
-Default converted preview cache path:
+Compare:
 
-```text
-C:/docuvra/converted
-```
+* document vs document
+* version vs version
 
-Both paths are configurable:
+Features:
 
-```powershell
-$env:DOCUVRA_STORAGE_BASE_PATH="C:/docuvra/uploads"
-$env:DOCUVRA_CONVERTED_BASE_PATH="C:/docuvra/converted"
-```
+* side-by-side compare
+* independent scroll
+* responsive compare layout
+* read-only annotation visibility during compare mode
 
-Folder structure:
+---
 
-```text
-C:/docuvra/uploads/{documentId}/{versionId}/{originalFileName}
-```
+# Role-Based Access
 
-Example:
+Docuvra supports **configuration-based login ON/OFF**.
 
-```text
-C:/docuvra/uploads/6f1d7c4e-5b6a-4e91-a71d-53d7c9c71d11/712fd4bb-24e3-4989-99de-f3d8c2e96b91/sample.pdf
-```
+---
 
-## API Endpoints
+## Roles
 
-Base path:
+### NORMAL_USER
 
-```text
-http://localhost:8080/api/documents
-```
+Can:
 
-Endpoints:
+* upload document
+* view document
+* view only comments where user is mentioned
+* reply only on mentioned thread
 
-```text
-POST   /api/documents/upload
-GET    /api/documents
-GET    /api/documents/{documentId}
-DELETE /api/documents/{documentId}
+Cannot:
 
-POST   /api/documents/{documentId}/versions
-GET    /api/documents/{documentId}/versions/{versionId}/view
-GET    /api/documents/{documentId}/versions/{versionId}/download
-GET    /api/documents/{documentId}/versions/{versionId}/thumbnail
-DELETE /api/documents/{documentId}/versions/{versionId}
-```
+* annotate
+* markup
+* create root comment
+* delete annotation
+* delete comment
 
-## Docker Validation Checklist
+---
 
-1. Start Docker Compose:
+### STAFF
 
-```powershell
-docker compose -f docker/docker-compose.yml up --build
-```
+Can:
 
-2. Check containers:
+* upload document
+* view assigned documents
+* view all unassigned documents
+* annotate
+* comment
+* reply
+* mention users
+* request unassigned document to own bucket
 
-```powershell
-docker ps
-```
+---
 
-3. Check backend health:
+### SUPERVISOR
 
-```powershell
-curl http://localhost:8080/actuator/health
-```
+Can:
 
-4. Open frontend:
+* all STAFF actions
+* assign documents to staff
+* approve/reject document assignment requests
+* access all documents
 
-```text
-http://localhost:4200
-```
+---
 
-5. Upload a PDF under 50 MB.
-6. Verify the file is stored in the Docker volume `docuvra_uploads`.
-7. Verify metadata is stored in PostgreSQL.
-8. Open the document viewer.
-9. Check the thumbnail appears.
-10. Download the file.
-11. Print the file.
+# Notifications
 
-## Testing Flow
+Supported notification types:
 
-1. Start PostgreSQL.
-2. Start the backend with `mvn spring-boot:run`.
-3. Start the frontend with `npm start`.
-4. Open `http://localhost:4200`.
-5. Upload a PDF.
-6. Open the PDF viewer and page through the document.
-7. Upload a new version from the document details page.
-8. Download a version.
-9. Delete a version.
-10. Delete the document.
+* @mention in comment
+* document assigned
+* document request created
+* request approved
+* request rejected
 
-## Known Limitations
+Features:
 
-- Non-PDF preview requires LibreOffice/OpenOffice for office files and ImageMagick for images.
-- No login or authentication.
-- No OCR.
+* unread badge
+* mark as read
+* mark all as read
 
-## Document Preview Conversion
+---
 
-Docuvra keeps the original uploaded file unchanged. When a non-PDF file is viewed, the backend creates a cached PDF at:
+# Secure File Handling
+
+## Original File Always Safe
+
+Docuvra **never modifies the original uploaded file**.
+
+Original file is stored in:
+
+* Local file system
+* PostgreSQL `BYTEA` backup
+
+---
+
+## Converted File = Temporary Cache
+
+Converted preview PDFs are stored as temporary cache:
 
 ```text
 {convertedBasePath}/{documentId}/{versionId}/viewer.pdf
 ```
 
-If the cached PDF is deleted, Docuvra recreates it from the original file. If the original file is missing from local storage, Docuvra restores it from the PostgreSQL `BYTEA` backup first.
+This folder can be deleted anytime.
 
-Supported conversion types:
+If deleted:
 
-```text
-doc, docx, ppt, pptx, txt, rtf, odt, odp
-jpg, jpeg, png, bmp, gif, tiff, tif, webp
+* Docuvra automatically regenerates preview from original file
+
+Benefits:
+
+* original file protection
+* fast preview load
+* easy cleanup
+* auto recovery
+
+---
+
+# Tech Stack
+
+## Backend
+
+* Java 21
+* Spring Boot
+* PostgreSQL
+* Flyway
+
+## Frontend
+
+* Angular
+* TypeScript
+* SCSS
+* PDF.js
+
+## File Handling
+
+* Apache POI
+* Apache Commons CSV
+* LibreOffice / OpenOffice
+* ImageMagick
+
+---
+
+# Project Structure
+
+```bash
+docuvra/
+├── backend/
+├── frontend/
+├── docker/
+├── docs/
+└── README.md
 ```
 
-PDF uploads are streamed directly without conversion. Downloads always return the original file.
+---
 
-Excel files are not converted to PDF. XLS, XLSX, and CSV files open in the dedicated Excel viewer.
+# Local Setup
 
-## Excel Viewing
+## 1. Clone Repository
 
-XLS, XLSX, and CSV files are rendered as read-only HTML tables.
-
-- All workbook sheets are shown as tabs.
-- Users can add and delete comments on cells.
-- Comments are stored in PostgreSQL and do not modify the original spreadsheet.
-- Original Excel files remain unchanged.
-- Download still returns the original file.
-- Very large sheets are limited by configured row and column limits.
-
-Excel configuration:
-
-```text
-DOCUVRA_EXCEL_MAX_ROWS=1000
-DOCUVRA_EXCEL_MAX_COLUMNS=100
+```bash
+git clone <repo-url>
+cd docuvra
 ```
 
-Current limitations:
+---
 
-- Excel editing is not supported.
-- Excel compare is not supported in the current MVP.
-- Cell range selection is minimal; comments are added from the selected cell in the UI.
+# Backend Setup
 
-Configuration:
+## Run backend
+
+```bash
+cd backend
+mvn clean install
+mvn spring-boot:run
+```
+
+---
+
+# Frontend Setup
+
+```bash
+cd frontend
+npm install
+npm start
+```
+
+---
+
+# Local URLs
+
+Frontend:
 
 ```text
+http://localhost:4200
+```
+
+Backend:
+
+```text
+http://localhost:8080/api
+```
+
+Swagger:
+
+```text
+http://localhost:8080/swagger-ui/index.html
+```
+
+Health:
+
+```text
+http://localhost:8080/actuator/health
+```
+
+---
+
+# Environment Variables
+
+```bash
 DOCUVRA_STORAGE_BASE_PATH
 DOCUVRA_CONVERTED_BASE_PATH
 DOCUVRA_OFFICE_PATH
 DOCUVRA_IMAGEMAGICK_PATH
 DOCUVRA_CONVERSION_TIMEOUT_SECONDS
+DOCUVRA_LOGIN_ENABLED
+DOCUVRA_DEFAULT_ROLE_WHEN_LOGIN_DISABLED
+DOCUVRA_DEFAULT_USERNAME_WHEN_LOGIN_DISABLED
+DOCUVRA_EXCEL_MAX_ROWS
+DOCUVRA_EXCEL_MAX_COLUMNS
 ```
 
-If storage paths are empty, Docuvra picks OS-aware defaults:
+---
+
+# Default Storage Paths
+
+## Windows
 
 ```text
-Windows uploads:   C:/docuvra/uploads
-Windows converted: C:/docuvra/converted
-Linux uploads:     /opt/docuvra/uploads
-Linux converted:   /opt/docuvra/converted
+C:/docuvra/uploads
+C:/docuvra/converted
 ```
 
-### Windows Converter Setup
+---
 
-Install LibreOffice or OpenOffice, plus ImageMagick.
-
-Verify:
-
-```powershell
-"C:/Program Files/LibreOffice/program/soffice.exe" --version
-magick --version
-```
-
-Create folders:
-
-```powershell
-mkdir C:\docuvra\uploads
-mkdir C:\docuvra\converted
-```
-
-Environment example:
-
-```powershell
-$env:DOCUVRA_STORAGE_BASE_PATH="C:/docuvra/uploads"
-$env:DOCUVRA_CONVERTED_BASE_PATH="C:/docuvra/converted"
-$env:DOCUVRA_OFFICE_PATH="C:/Program Files/LibreOffice/program/soffice.exe"
-$env:DOCUVRA_IMAGEMAGICK_PATH="magick"
-```
-
-### Linux Converter Setup
-
-Ubuntu/Debian:
-
-```bash
-sudo apt update
-sudo apt install -y libreoffice imagemagick poppler-utils fonts-dejavu fonts-liberation
-```
-
-Verify:
-
-```bash
-soffice --version
-libreoffice --version
-magick --version
-convert --version
-```
-
-Create folders:
-
-```bash
-sudo mkdir -p /opt/docuvra/uploads
-sudo mkdir -p /opt/docuvra/converted
-sudo chown -R $USER:$USER /opt/docuvra
-```
-
-Run backend:
-
-```bash
-export DOCUVRA_STORAGE_BASE_PATH=/opt/docuvra/uploads
-export DOCUVRA_CONVERTED_BASE_PATH=/opt/docuvra/converted
-export DOCUVRA_OFFICE_PATH=soffice
-export DOCUVRA_IMAGEMAGICK_PATH=magick
-
-mvn spring-boot:run
-```
-
-If you use OpenOffice instead of LibreOffice:
-
-```bash
-export DOCUVRA_OFFICE_PATH=/path/to/soffice
-```
-
-### Docker Converter Note
-
-The backend Docker image installs:
+## Linux
 
 ```text
-libreoffice
-imagemagick
-font-dejavu
-font-liberation
-```
-
-Docker paths:
-
-```text
-/app/uploads
+/opt/docuvra/uploads
 /opt/docuvra/converted
 ```
+
+---
+
+# Docker Support
+
+Run:
+
+```bash
+docker compose up --build
+```
+
+Stop:
+
+```bash
+docker compose down
+```
+
+---
+
+# Roadmap
+
+Upcoming:
+
+* OCR support
+* Digital signature
+* Redaction
+* Audit trail
+* S3/Cloud storage
+* Real-time collaboration
+* Workflow integration
+
+---
+
+# Known Limitations
+
+* OCR not implemented yet
+* Digital signature not implemented yet
+* Redaction not implemented yet
+* Excel compare not supported yet
+* Real-time collaboration not available yet
+
+---
+
+# License
+
+MIT License
+
+---
 
 ## Future Enhancements
 
@@ -428,5 +457,8 @@ Docker paths:
 <img width="1906" height="838" alt="image" src="https://github.com/user-attachments/assets/6ce2f66d-a527-4fe0-a7e7-d9558e989dd6" />
 <img width="1893" height="961" alt="image" src="https://github.com/user-attachments/assets/8d7b5a4b-2931-4668-83c1-bc46a09a99a0" />
 
+# Author
+
+Built with ❤️ as **Docuvra** – a modern document viewing and collaboration platform.
 
 
