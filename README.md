@@ -419,3 +419,14 @@ Docker paths:
 - OCR
 - Access control
 - S3-compatible storage
+
+## Sample screen
+<img width="1884" height="837" alt="image" src="https://github.com/user-attachments/assets/cb5f680a-3d18-4c7e-961b-7231c454105b" />
+
+<img width="1822" height="978" alt="image" src="https://github.com/user-attachments/assets/6fda5233-d4e8-4348-8299-4e8a1bcac666" />
+<img width="1884" height="752" alt="image" src="https://github.com/user-attachments/assets/778d7d29-b498-4fd5-b016-144d6d4ea3b7" />
+<img width="1906" height="838" alt="image" src="https://github.com/user-attachments/assets/6ce2f66d-a527-4fe0-a7e7-d9558e989dd6" />
+<img width="1893" height="961" alt="image" src="https://github.com/user-attachments/assets/8d7b5a4b-2931-4668-83c1-bc46a09a99a0" />
+
+
+
