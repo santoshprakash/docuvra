@@ -1,0 +1,288 @@
+.excel-page {
+  display: grid;
+  grid-template-rows: auto auto auto minmax(0, 1fr);
+  height: calc(100vh - 64px);
+  min-height: 0;
+  overflow: hidden;
+}
+
+.excel-toolbar,
+.sheet-tabs {
+  align-items: center;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  gap: 12px;
+  padding: 12px 18px;
+}
+
+.file-title {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+
+  strong,
+  span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  span {
+    color: var(--color-text-secondary);
+    font-size: 13px;
+  }
+}
+
+.sheet-tabs {
+  overflow-x: auto;
+
+  button {
+    background: #eef2f7;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 700;
+    height: 36px;
+    padding: 0 12px;
+    white-space: nowrap;
+  }
+
+  button.active {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #ffffff;
+  }
+}
+
+.excel-alert {
+  background: #fef2f2;
+  border-bottom: 1px solid #fecaca;
+  color: var(--color-error);
+  font-size: 14px;
+  padding: 10px 18px;
+}
+
+.excel-workspace {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  min-height: 0;
+  overflow: hidden;
+  padding: 12px;
+}
+
+.grid-panel,
+.comment-panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.grid-shell {
+  height: 100%;
+  overflow: auto;
+}
+
+.excel-grid {
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13px;
+  min-width: 100%;
+
+  th,
+  td {
+    border-bottom: 1px solid var(--color-border);
+    border-right: 1px solid var(--color-border);
+    height: 32px;
+    max-width: 260px;
+    min-width: 96px;
+    padding: 6px 8px;
+    white-space: nowrap;
+  }
+
+  thead th {
+    background: #f8fafc;
+    position: sticky;
+    top: 0;
+    z-index: 3;
+  }
+
+  .corner-cell,
+  .row-header {
+    background: #f8fafc;
+    color: var(--color-text-secondary);
+    left: 0;
+    min-width: 54px;
+    position: sticky;
+    text-align: right;
+    width: 54px;
+    z-index: 2;
+  }
+
+  .corner-cell {
+    z-index: 4;
+  }
+
+  td {
+    cursor: pointer;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  td.selected {
+    box-shadow: inset 0 0 0 2px var(--color-primary);
+    background: #eff6ff;
+  }
+
+  td.has-comment {
+    position: relative;
+  }
+
+  td.has-comment::after {
+    background: #f59e0b;
+    border-radius: 999px;
+    content: "";
+    height: 7px;
+    position: absolute;
+    right: 4px;
+    top: 4px;
+    width: 7px;
+  }
+}
+
+.load-more-row {
+  display: flex;
+  justify-content: center;
+  padding: 14px;
+}
+
+.excel-state {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  justify-content: center;
+  padding: 28px;
+  text-align: center;
+
+  h1 {
+    font-size: 22px;
+    margin: 0 0 8px;
+  }
+
+  p {
+    color: var(--color-text-secondary);
+    margin: 0;
+  }
+}
+
+.comment-panel {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+}
+
+.comment-header,
+.comment-form {
+  border-bottom: 1px solid var(--color-border);
+  padding: 14px;
+}
+
+.comment-header {
+  display: flex;
+  justify-content: space-between;
+
+  span {
+    color: var(--color-primary);
+    font-weight: 800;
+  }
+}
+
+.comment-form {
+  display: grid;
+  gap: 10px;
+
+  textarea {
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    font: inherit;
+    padding: 10px;
+    resize: vertical;
+    width: 100%;
+  }
+}
+
+.comment-list {
+  overflow: auto;
+  padding: 12px;
+}
+
+.comment-card {
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  cursor: pointer;
+  margin-bottom: 10px;
+  padding: 12px;
+
+  div,
+  footer {
+    align-items: center;
+    display: flex;
+    gap: 8px;
+    justify-content: space-between;
+  }
+
+  span,
+  time {
+    color: var(--color-text-secondary);
+    font-size: 12px;
+  }
+
+  p {
+    line-height: 20px;
+    margin: 8px 0;
+  }
+}
+
+.text-danger {
+  background: transparent;
+  border: 0;
+  color: var(--color-error);
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.empty-comments {
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  margin: 0;
+}
+
+@media (max-width: 1024px) {
+  .excel-workspace {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) 320px;
+  }
+}
+
+@media (max-width: 640px) {
+  .excel-page {
+    height: calc(100vh - 56px);
+  }
+
+  .excel-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .excel-toolbar .btn {
+    width: 100%;
+  }
+
+  .excel-workspace {
+    padding: 8px;
+  }
+}

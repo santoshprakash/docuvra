@@ -1,0 +1,44 @@
+<aside class="comment-panel" aria-label="Comments">
+  <header>
+    <h2>Comments</h2>
+    <span>{{ annotations.length }}</span>
+  </header>
+
+  @if (annotations.length === 0) {
+    <div class="empty-comments">No annotations yet.</div>
+  } @else {
+    @for (group of pageGroups(); track group.pageNumber) {
+      <section class="page-group">
+        <h3>Page {{ group.pageNumber }}</h3>
+        @for (annotation of group.annotations; track annotation.annotationId) {
+          <div
+            class="comment-card"
+            role="button"
+            tabindex="0"
+            [id]="'comment-' + annotation.annotationId"
+            [class.selected]="annotation.annotationId === selectedAnnotationId"
+            (click)="annotationSelected.emit(annotation)"
+            (keydown.enter)="annotationSelected.emit(annotation)"
+          >
+            <span>{{ annotation.annotationType }}</span>
+            <p>{{ commentText(annotation) }}</p>
+            <div class="comment-meta">
+              <time>{{ annotation.createdAt | date: 'medium' }}</time>
+              @if (annotation.comments.length) {
+                <button
+                  class="comment-delete"
+                  type="button"
+                  title="Delete comment and annotation"
+                  aria-label="Delete comment and annotation"
+                  (click)="deleteComment($event, annotation)"
+                >
+                  Delete
+                </button>
+              }
+            </div>
+          </div>
+        }
+      </section>
+    }
+  }
+</aside>

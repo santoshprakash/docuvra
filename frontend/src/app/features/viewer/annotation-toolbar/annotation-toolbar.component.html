@@ -1,0 +1,42 @@
+<div class="annotation-toolbar" aria-label="Annotation tools">
+  <div class="color-tools" aria-label="Annotation colors">
+    @for (color of colors; track color.value) {
+      <button
+        class="color-button"
+        type="button"
+        [class.active]="color.value.toLowerCase() === selectedColor.toLowerCase()"
+        [style.background]="color.value"
+        [attr.aria-label]="color.label"
+        [title]="color.label"
+        (click)="colorSelected.emit(color.value)"
+      ></button>
+    }
+  </div>
+
+  @for (item of tools; track item.tool) {
+    <button
+      class="tool-button"
+      type="button"
+      [class.active]="item.tool === activeTool"
+      [attr.aria-pressed]="item.tool === activeTool"
+      [attr.aria-label]="item.label"
+      [title]="item.label"
+      (click)="toolSelected.emit(item.tool)"
+    >
+      <span class="tool-icon" aria-hidden="true">{{ item.icon }}</span>
+      <span class="tool-label">{{ item.label }}</span>
+    </button>
+  }
+
+  <button
+    class="tool-button danger"
+    type="button"
+    title="Delete selected annotation"
+    aria-label="Delete selected annotation"
+    [disabled]="!canDelete"
+    (click)="deleteSelected.emit()"
+  >
+    <span class="tool-icon" aria-hidden="true">X</span>
+    <span class="tool-label">Delete</span>
+  </button>
+</div>

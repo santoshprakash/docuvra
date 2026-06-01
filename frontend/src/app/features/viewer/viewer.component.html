@@ -1,0 +1,199 @@
+<section class="viewer-page">
+  <header class="viewer-header">
+    <a class="btn btn-secondary" [routerLink]="['/documents', documentId]">Back</a>
+    <div class="file-title">
+      <strong>{{ selectedVersion?.fileName || 'Document viewer' }}</strong>
+      @if (selectedVersion) {
+        <span>Version {{ selectedVersion.versionNumber }}</span>
+      }
+    </div>
+  </header>
+
+  @if (selectedVersion) {
+    <div class="viewer-toolbar">
+      <span class="page-count">{{ currentPage }} / {{ totalPages || '-' }}</span>
+      <button class="btn btn-secondary" type="button" [disabled]="zoom <= minZoom || isPdfLoading" (click)="zoomOut()">Zoom Out</button>
+      <button class="btn btn-secondary" type="button" [disabled]="zoom >= maxZoom || isPdfLoading" (click)="zoomIn()">Zoom In</button>
+      <button class="btn btn-secondary" type="button" [disabled]="isPdfLoading" (click)="fitWidth()">Fit Width</button>
+      <button class="btn btn-secondary" type="button" (click)="download()">Download</button>
+      <button class="btn btn-primary" type="button" (click)="print()">Print</button>
+    </div>
+  }
+
+  @if (annotationError && !draftAnnotation) {
+    <div class="annotation-alert">{{ annotationError }}</div>
+  }
+
+  <div class="viewer-workspace" [class.pdf-ready]="selectedVersion && !isLoading && !errorMessage">
+    @if (selectedVersion && !isLoading && !errorMessage) {
+      <div class="annotation-toolbar-wrap">
+        <app-annotation-toolbar
+          [activeTool]="activeTool"
+          [canDelete]="!!selectedAnnotationId"
+          [selectedColor]="selectedColor"
+          (toolSelected)="setTool($event)"
+          (colorSelected)="setSelectedColor($event)"
+          (deleteSelected)="deleteSelectedAnnotation()"
+        />
+      </div>
+    }
+
+    <main class="viewer-canvas-shell" #canvasShell (scroll)="onCanvasShellScroll()">
+      @if (isLoading || isPdfLoading) {
+        <div class="viewer-state">
+          <h1>Preparing document preview</h1>
+          <p>Please wait while the document opens.</p>
+        </div>
+      } @else if (errorMessage) {
+        <div class="viewer-state error">
+          <h1>Preview unavailable</h1>
+          <p>{{ errorMessage }}</p>
+          <div class="state-actions">
+            <a class="btn btn-secondary" [routerLink]="['/documents', documentId]">Back</a>
+            @if (selectedVersion) {
+              <button class="btn btn-primary" type="button" (click)="download()">Download</button>
+            }
+          </div>
+        </div>
+      } @else {
+        <div class="page-stack">
+          @for (page of pages; track page.pageNumber) {
+            <div
+              class="page-stage"
+              [id]="'pdf-page-' + page.pageNumber"
+              [style.width.px]="page.width"
+              [style.height.px]="page.height"
+            >
+              <canvas #pdfCanvas class="pdf-canvas" [attr.aria-label]="'PDF page ' + page.pageNumber"></canvas>
+              <div
+                class="annotation-layer"
+                [class.select-mode]="activeTool === 'SELECT'"
+                (pointerdown)="onOverlayPointerDown(page, $event)"
+                (pointermove)="onOverlayPointerMove($event)"
+                (pointerup)="onOverlayPointerUp($event)"
+                (pointercancel)="closeDraft()"
+              >
+                @for (annotation of pageAnnotations(page.pageNumber); track annotation.annotationId) {
+                  <button
+                    class="annotation-item"
+                    type="button"
+                    [class.selected]="annotation.annotationId === selectedAnnotationId"
+                    [class.highlight]="annotation.annotationType === 'HIGHLIGHT'"
+                    [class.comment]="annotation.annotationType === 'COMMENT'"
+                    [class.rectangle]="annotation.annotationType === 'RECTANGLE'"
+                    [class.freehand]="annotation.annotationType === 'FREEHAND_DRAW'"
+                    [class.underline]="annotation.annotationType === 'UNDERLINE'"
+                    [class.strike]="annotation.annotationType === 'STRIKE_THROUGH'"
+                    [style]="annotationStyle(annotation)"
+                    (pointerdown)="startMoveAnnotation($event, annotation, page)"
+                    (click)="$event.stopPropagation(); selectAnnotation(annotation)"
+                  >
+                    @if (annotation.annotationType === 'FREEHAND_DRAW') {
+                      <svg class="freehand-svg" [attr.viewBox]="freehandViewBox(annotation, page)">
+                        <path class="freehand-path" [attr.d]="freehandPathFor(annotation, page)" />
+                      </svg>
+                    } @else if (annotation.annotationType === 'COMMENT') {
+                      <span>+</span>
+                    }
+
+                    @if (annotation.annotationId === selectedAnnotationId) {
+                      <span
+                        class="resize-handle top-left"
+                        (pointerdown)="startResizeAnnotation($event, annotation, page, 'top-left')"
+                      ></span>
+                      <span
+                        class="resize-handle top-right"
+                        (pointerdown)="startResizeAnnotation($event, annotation, page, 'top-right')"
+                      ></span>
+                      <span
+                        class="resize-handle bottom-left"
+                        (pointerdown)="startResizeAnnotation($event, annotation, page, 'bottom-left')"
+                      ></span>
+                      <span
+                        class="resize-handle bottom-right"
+                        (pointerdown)="startResizeAnnotation($event, annotation, page, 'bottom-right')"
+                      ></span>
+                    }
+                  </button>
+                }
+
+                @if (drawPreview && drawPreview.pageNumber === page.pageNumber) {
+                  <div
+                    class="annotation-item draft"
+                    [class.highlight]="drawPreview.annotationType === 'HIGHLIGHT'"
+                    [class.comment]="drawPreview.annotationType === 'COMMENT'"
+                    [class.rectangle]="drawPreview.annotationType === 'RECTANGLE'"
+                    [class.freehand]="drawPreview.annotationType === 'FREEHAND_DRAW'"
+                    [class.underline]="drawPreview.annotationType === 'UNDERLINE'"
+                    [class.strike]="drawPreview.annotationType === 'STRIKE_THROUGH'"
+                    [style]="annotationStyle(drawPreview)"
+                  >
+                    @if (drawPreview.annotationType === 'FREEHAND_DRAW') {
+                      <svg class="freehand-svg" [attr.viewBox]="freehandViewBox(drawPreview, page)">
+                        <path class="freehand-path" [attr.d]="freehandPathFor(drawPreview, page)" />
+                      </svg>
+                    } @else if (drawPreview.annotationType === 'COMMENT') {
+                      <span>+</span>
+                    }
+                  </div>
+                }
+              </div>
+              @if (!page.rendered) {
+                <div class="page-loading">Loading page {{ page.pageNumber }}</div>
+              }
+            </div>
+          }
+        </div>
+      }
+    </main>
+
+    @if (selectedVersion && !isLoading && !errorMessage) {
+      <app-comment-panel
+        [annotations]="annotations"
+        [selectedAnnotationId]="selectedAnnotationId"
+        (annotationSelected)="selectAnnotation($event, false)"
+        (commentDeleted)="deleteCommentAndLinkedAnnotation($event.commentId, $event.annotationId)"
+      />
+    }
+  </div>
+
+  @if (document?.versions?.length) {
+    <footer class="version-switcher" aria-label="Version switcher">
+      @for (version of document?.versions; track version.versionId) {
+        <button
+          class="version-pill"
+          [class.selected]="version.versionId === versionId"
+          type="button"
+          (click)="switchVersion(version)"
+        >
+          V{{ version.versionNumber }}
+        </button>
+      }
+    </footer>
+  }
+
+  @if (draftAnnotation) {
+    <div class="comment-dialog-backdrop">
+      <section class="comment-dialog" aria-labelledby="comment-dialog-title">
+        <h2 id="comment-dialog-title">Add comment</h2>
+        <p>Page {{ draftAnnotation.pageNumber }} - {{ draftAnnotation.annotationType }}</p>
+        <textarea
+          #commentBox
+          rows="4"
+          placeholder="Write a comment"
+          [value]="draftComment"
+          (input)="draftComment = commentBox.value"
+        ></textarea>
+        @if (annotationError) {
+          <div class="annotation-alert inline">{{ annotationError }}</div>
+        }
+        <div class="dialog-actions">
+          <button class="btn btn-secondary" type="button" [disabled]="isSavingAnnotation" (click)="closeDraft()">Cancel</button>
+          <button class="btn btn-primary" type="button" [disabled]="isSavingAnnotation" (click)="saveDraft()">
+            {{ isSavingAnnotation ? 'Saving' : 'Save Annotation' }}
+          </button>
+        </div>
+      </section>
+    </div>
+  }
+</section>

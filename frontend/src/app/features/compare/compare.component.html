@@ -1,0 +1,80 @@
+<section class="compare-page" [class.tabs-mode]="viewMode === 'tabs'">
+  <header class="compare-toolbar">
+    <a class="btn btn-secondary" routerLink="/documents">Back</a>
+
+    <div class="selector-group">
+      <label for="left-document">Left Document</label>
+      <select id="left-document" [(ngModel)]="left.documentId" [disabled]="isLoadingDocuments" (change)="onDocumentChange('left')">
+        <option value="">Select document</option>
+        @for (document of documents; track document.documentId) {
+          <option [value]="document.documentId">{{ document.title }}</option>
+        }
+      </select>
+      <select [(ngModel)]="left.versionId" [disabled]="!left.details || left.loadingVersions">
+        <option value="">Select version</option>
+        @for (version of left.details?.versions ?? []; track version.versionId) {
+          <option [value]="version.versionId">{{ versionLabel(version) }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="selector-group">
+      <label for="right-document">Right Document</label>
+      <select id="right-document" [(ngModel)]="right.documentId" [disabled]="isLoadingDocuments" (change)="onDocumentChange('right')">
+        <option value="">Select document</option>
+        @for (document of documents; track document.documentId) {
+          <option [value]="document.documentId">{{ document.title }}</option>
+        }
+      </select>
+      <select [(ngModel)]="right.versionId" [disabled]="!right.details || right.loadingVersions">
+        <option value="">Select version</option>
+        @for (version of right.details?.versions ?? []; track version.versionId) {
+          <option [value]="version.versionId">{{ versionLabel(version) }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="toolbar-actions">
+      <button class="btn btn-secondary" type="button" (click)="swapSelections()">Swap</button>
+      <button class="btn btn-secondary" type="button" (click)="resetZoom()">Reset zoom</button>
+      <div class="view-toggle" aria-label="Compare view mode">
+        <button type="button" [class.active]="viewMode === 'side-by-side'" (click)="setViewMode('side-by-side')">Side</button>
+        <button type="button" [class.active]="viewMode === 'stacked'" (click)="setViewMode('stacked')">Stacked</button>
+        <button type="button" [class.active]="viewMode === 'tabs'" (click)="setViewMode('tabs')">Tabs</button>
+      </div>
+    </div>
+  </header>
+
+  @if (errorMessage) {
+    <div class="compare-alert">{{ errorMessage }}</div>
+  }
+
+  @if (viewMode === 'tabs') {
+    <div class="mobile-tabs">
+      <button type="button" [class.active]="activeTab === 'left'" (click)="activeTab = 'left'">Left Document</button>
+      <button type="button" [class.active]="activeTab === 'right'" (click)="activeTab = 'right'">Right Document</button>
+    </div>
+  }
+
+  <main class="compare-workspace" [class.stacked]="viewMode === 'stacked'" [class.tabs]="viewMode === 'tabs'">
+    <app-compare-pdf-panel
+      #leftPanel
+      class="compare-side left-side"
+      [class.hidden-mobile-tab]="viewMode === 'tabs' && activeTab !== 'left'"
+      side="LEFT"
+      [documentId]="left.documentId"
+      [documentTitle]="leftTitle"
+      [version]="leftVersion"
+    />
+
+    <app-compare-pdf-panel
+      #rightPanel
+      class="compare-side right-side"
+      [class.hidden-mobile-tab]="viewMode === 'tabs' && activeTab !== 'right'"
+      side="RIGHT"
+      [documentId]="right.documentId"
+      [documentTitle]="rightTitle"
+      [version]="rightVersion"
+    />
+  </main>
+</section>

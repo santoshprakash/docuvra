@@ -1,0 +1,47 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: docuvra-backend
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:${DOCUVRA_DB_URL:jdbc:postgresql://localhost:5433/docuvra}}
+    username: ${SPRING_DATASOURCE_USERNAME:${DOCUVRA_DB_USERNAME:postgres}}
+    password: ${SPRING_DATASOURCE_PASSWORD:${DOCUVRA_DB_PASSWORD:postgres}}
+    driver-class-name: org.postgresql.Driver
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+    show-sql: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: false
+
+docuvra:
+  storage:
+    base-path: ${DOCUVRA_STORAGE_BASE_PATH:}
+    converted-path: ${DOCUVRA_CONVERTED_BASE_PATH:}
+  converter:
+    office-path: ${DOCUVRA_OFFICE_PATH:}
+    imagemagick-path: ${DOCUVRA_IMAGEMAGICK_PATH:}
+    timeout-seconds: ${DOCUVRA_CONVERSION_TIMEOUT_SECONDS:120}
+  excel:
+    max-rows: ${DOCUVRA_EXCEL_MAX_ROWS:1000}
+    max-columns: ${DOCUVRA_EXCEL_MAX_COLUMNS:100}
+  cors:
+    allowed-origin: ${DOCUVRA_CORS_ALLOWED_ORIGIN:http://localhost:4200}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health

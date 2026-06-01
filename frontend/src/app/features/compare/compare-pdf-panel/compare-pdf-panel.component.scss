@@ -1,0 +1,355 @@
+.compare-panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.panel-header,
+.panel-controls,
+.readonly-comments {
+  border-bottom: 1px solid var(--color-border);
+  padding: 12px 14px;
+}
+
+.panel-header {
+  h2 {
+    font-size: 17px;
+    line-height: 22px;
+    margin: 2px 0;
+    overflow-wrap: anywhere;
+  }
+
+  p,
+  small,
+  .side-label {
+    color: var(--color-text-secondary);
+    font-size: 12px;
+  }
+
+  p {
+    margin: 0 0 2px;
+    overflow-wrap: anywhere;
+  }
+}
+
+.side-label {
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.panel-controls {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.icon-btn {
+  align-items: center;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 24px;
+  font-weight: 700;
+  height: 40px;
+  justify-content: center;
+  line-height: 1;
+  width: 40px;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+}
+
+.page-count {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  min-width: 56px;
+  text-align: center;
+}
+
+.panel-shell {
+  align-items: flex-start;
+  background: #eef2f7;
+  display: flex;
+  justify-content: center;
+  min-height: 0;
+  overflow: auto;
+  padding: 20px;
+}
+
+.excel-compare {
+  align-self: stretch;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: 100%;
+  width: 100%;
+}
+
+.excel-sheet-tabs {
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 10px;
+
+  button {
+    background: #eef2f7;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 700;
+    height: 34px;
+    padding: 0 10px;
+    white-space: nowrap;
+  }
+
+  button.active {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #ffffff;
+  }
+}
+
+.excel-grid-shell {
+  min-height: 0;
+  overflow: auto;
+}
+
+.excel-grid {
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 12px;
+  min-width: 100%;
+
+  th,
+  td {
+    background: #ffffff;
+    border-bottom: 1px solid var(--color-border);
+    border-right: 1px solid var(--color-border);
+    height: 30px;
+    max-width: 220px;
+    min-width: 88px;
+    overflow: hidden;
+    padding: 5px 8px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  thead th {
+    background: #f8fafc;
+    position: sticky;
+    top: 0;
+    z-index: 3;
+  }
+
+  .corner-cell,
+  .row-header {
+    background: #f8fafc;
+    color: var(--color-text-secondary);
+    left: 0;
+    min-width: 48px;
+    position: sticky;
+    text-align: right;
+    width: 48px;
+    z-index: 2;
+  }
+
+  .corner-cell {
+    z-index: 4;
+  }
+
+  td.has-comment {
+    position: relative;
+  }
+
+  td.has-comment::after {
+    background: #f59e0b;
+    border-radius: 999px;
+    content: "";
+    height: 7px;
+    position: absolute;
+    right: 4px;
+    top: 4px;
+    width: 7px;
+  }
+}
+
+.load-more-row {
+  display: flex;
+  justify-content: center;
+  padding: 14px;
+}
+
+.panel-state {
+  align-items: center;
+  align-self: center;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 420px;
+  padding: 28px;
+  text-align: center;
+
+  h3 {
+    font-size: 18px;
+    margin: 0;
+  }
+
+  p {
+    color: var(--color-text-secondary);
+    line-height: 22px;
+    margin: 0;
+  }
+}
+
+.panel-state.error {
+  border-color: #fecaca;
+}
+
+.page-stack {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+}
+
+.page-stage {
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-soft);
+  min-height: 1px;
+  min-width: 1px;
+  position: relative;
+}
+
+.pdf-canvas {
+  background: #ffffff;
+  display: block;
+  max-width: 100%;
+}
+
+.page-loading {
+  align-items: center;
+  background: #ffffff;
+  color: var(--color-text-secondary);
+  display: flex;
+  font-weight: 700;
+  inset: 0;
+  justify-content: center;
+  position: absolute;
+}
+
+.annotation-layer {
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+}
+
+.annotation-item {
+  background: transparent;
+  border: 2px solid var(--annotation-color, #2563eb);
+  border-radius: 3px;
+  cursor: pointer;
+  display: block;
+  margin: 0;
+  min-height: 4px;
+  min-width: 4px;
+  padding: 0;
+  pointer-events: auto;
+  position: absolute;
+}
+
+.annotation-item.highlight {
+  background: color-mix(in srgb, var(--annotation-color, #facc15) 28%, transparent);
+  border-color: transparent;
+}
+
+.annotation-item.underline,
+.annotation-item.strike {
+  background: var(--annotation-color, #16a34a);
+  border: 0;
+  border-radius: 999px;
+}
+
+.annotation-item.comment {
+  align-items: center;
+  background: var(--annotation-color, #2563eb);
+  border-radius: 999px;
+  color: #ffffff;
+  display: flex;
+  font-size: 16px;
+  font-weight: 800;
+  justify-content: center;
+}
+
+.annotation-item.freehand {
+  border: 0;
+}
+
+.annotation-item:not(.selected) {
+  opacity: 0.78;
+}
+
+.annotation-item.selected {
+  box-shadow: 0 0 0 2px #ffffff, 0 0 0 5px #2563eb;
+  opacity: 1;
+}
+
+.freehand-svg {
+  display: block;
+  height: 100%;
+  overflow: visible;
+  width: 100%;
+
+  .freehand-path {
+    fill: none;
+    stroke: var(--annotation-color, #dc2626);
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: var(--annotation-stroke-width, 2px);
+  }
+}
+
+.readonly-comments {
+  border-bottom: 0;
+  border-top: 1px solid var(--color-border);
+
+  strong {
+    display: block;
+    font-size: 13px;
+    margin-bottom: 8px;
+  }
+
+  p {
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    line-height: 20px;
+    margin: 6px 0 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .panel-controls .btn {
+    flex: 1 1 calc(50% - 8px);
+  }
+
+  .panel-shell {
+    padding: 14px;
+  }
+}

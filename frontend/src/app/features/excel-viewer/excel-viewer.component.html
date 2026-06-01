@@ -1,0 +1,131 @@
+<section class="excel-page">
+  <header class="excel-toolbar">
+    <a class="btn btn-secondary" [routerLink]="['/documents', documentId]">Back</a>
+    <div class="file-title">
+      <strong>{{ workbook?.fileName || 'Excel viewer' }}</strong>
+      @if (selectedSheet) {
+        <span>{{ selectedSheet.sheetName }} · {{ selectedSheet.rowCount }} rows · {{ selectedSheet.columnCount }} columns</span>
+      }
+    </div>
+    <button class="btn btn-secondary" type="button" (click)="download()">Download original</button>
+  </header>
+
+  @if (workbook?.sheets?.length) {
+    <nav class="sheet-tabs" aria-label="Workbook sheets">
+      @for (sheet of workbook?.sheets; track sheet.sheetIndex) {
+        <button
+          type="button"
+          [class.active]="sheet.sheetIndex === selectedSheetIndex"
+          (click)="switchSheet(sheet)"
+        >
+          {{ sheet.sheetName }}
+        </button>
+      }
+    </nav>
+  }
+
+  @if (errorMessage) {
+    <div class="excel-alert">{{ errorMessage }}</div>
+  }
+
+  <main class="excel-workspace">
+    <section class="grid-panel">
+      @if (isLoading || isSheetLoading && !sheetData) {
+        <div class="excel-state">
+          <h1>Loading spreadsheet</h1>
+          <p>Please wait while the workbook opens.</p>
+        </div>
+      } @else if (sheetData) {
+        <div class="grid-shell" #gridShell>
+          <table class="excel-grid">
+            <thead>
+              <tr>
+                <th class="corner-cell"></th>
+                @for (column of sheetData.columns; track column.index) {
+                  <th>{{ column.name }}</th>
+                }
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of sheetData.rows; track row.rowIndex) {
+                <tr>
+                  <th class="row-header">{{ row.rowIndex + 1 }}</th>
+                  @for (cell of row.cells; track cell.cellRef) {
+                    <td
+                      [id]="'excel-cell-' + cell.cellRef"
+                      [class.selected]="selectedCell?.cellRef === cell.cellRef"
+                      [class.has-comment]="cellHasComment(cell)"
+                      (click)="selectCell(cell)"
+                    >
+                      {{ cell.displayValue }}
+                    </td>
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+          @if (hasMoreRows) {
+            <div class="load-more-row">
+              <button class="btn btn-secondary" type="button" [disabled]="isSheetLoading" (click)="loadMoreRows()">
+                {{ isSheetLoading ? 'Loading' : 'Load more rows' }}
+              </button>
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="excel-state">
+          <h1>No sheet selected</h1>
+          <p>Select a sheet tab to preview data.</p>
+        </div>
+      }
+    </section>
+
+    <aside class="comment-panel">
+      <div class="comment-header">
+        <strong>Comments</strong>
+        @if (selectedCell) {
+          <span>{{ selectedCell.cellRef }}</span>
+        }
+      </div>
+
+      <div class="comment-form">
+        <textarea
+          #commentBox
+          rows="4"
+          placeholder="Add a comment to the selected cell"
+          [disabled]="!selectedCell || isSavingComment"
+          [value]="commentText"
+          (input)="updateCommentText(commentBox.value)"
+        ></textarea>
+        <button
+          class="btn btn-primary"
+          type="button"
+          [disabled]="!selectedCell || !commentText.trim() || isSavingComment"
+          (click)="addComment()"
+        >
+          {{ isSavingComment ? 'Saving' : 'Add Comment' }}
+        </button>
+      </div>
+
+      <div class="comment-list">
+        @if (visibleComments.length) {
+          @for (comment of visibleComments; track comment.id) {
+            <article class="comment-card" (click)="jumpToComment(comment)">
+              <div>
+                <strong>{{ comment.createdByName }}</strong>
+                <span>{{ comment.startCell }}{{ comment.endCell ? ' - ' + comment.endCell : '' }}</span>
+              </div>
+              <p>{{ comment.commentText }}</p>
+              <footer>
+                <time>{{ comment.createdAt | date: 'short' }}</time>
+                <button class="text-danger" type="button" (click)="$event.stopPropagation(); deleteComment(comment)">Delete</button>
+              </footer>
+            </article>
+          }
+        } @else {
+          <p class="empty-comments">{{ selectedCell ? 'No comments for this cell.' : 'Select a cell to filter comments.' }}</p>
+        }
+      </div>
+    </aside>
+  </main>
+</section>

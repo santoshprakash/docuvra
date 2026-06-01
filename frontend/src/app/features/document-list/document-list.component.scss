@@ -1,0 +1,257 @@
+.page-header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+
+  h1 {
+    font-size: 28px;
+    line-height: 36px;
+    margin: 0;
+  }
+
+  p {
+    color: var(--color-text-secondary);
+    margin: 4px 0 0;
+  }
+}
+
+.list-shell {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.empty-state {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 360px;
+  padding: 32px;
+  text-align: center;
+
+  h2 {
+    font-size: 20px;
+    margin: 0 0 8px;
+  }
+
+  p {
+    color: var(--color-text-secondary);
+    margin: 0;
+  }
+}
+
+.alert {
+  border-radius: 8px;
+  font-size: 14px;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+}
+
+.alert-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: var(--color-error);
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.documents-table {
+  border-collapse: collapse;
+  min-width: 980px;
+  width: 100%;
+
+  th,
+  td {
+    border-bottom: 1px solid var(--color-border);
+    padding: 16px;
+    text-align: left;
+    vertical-align: middle;
+  }
+
+  th {
+    background: #f8fafc;
+    color: var(--color-text-secondary);
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  td {
+    font-size: 14px;
+  }
+
+  td strong {
+    display: block;
+    font-size: 15px;
+    margin-bottom: 4px;
+  }
+
+  td span {
+    color: var(--color-text-secondary);
+    display: block;
+    font-size: 12px;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: 0;
+  }
+}
+
+.document-thumbnail {
+  align-items: center;
+  background: #f8fafc;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  color: var(--color-text-secondary);
+  display: flex;
+  font-size: 13px;
+  font-weight: 700;
+  height: 160px;
+  justify-content: center;
+  overflow: hidden;
+  width: 120px;
+
+  img {
+    height: 100%;
+    object-fit: cover;
+    width: 100%;
+  }
+}
+
+.document-link {
+  cursor: pointer;
+  transition: border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
+
+  &:hover {
+    border-color: var(--color-primary);
+    box-shadow: 0 8px 18px rgba(37, 99, 235, 0.18);
+    transform: translateY(-1px);
+  }
+}
+
+.document-name-link {
+  color: var(--color-text-primary);
+  display: inline-block;
+
+  &:hover {
+    color: var(--color-primary);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+}
+
+.actions-col {
+  width: 260px;
+}
+
+.actions,
+.card-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-danger {
+  background: #ffffff;
+  border-color: #fecaca;
+  color: var(--color-error);
+}
+
+.document-cards {
+  display: none;
+}
+
+.document-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 16px;
+
+  h2 {
+    font-size: 18px;
+    margin: 0 0 6px;
+  }
+
+  p {
+    color: var(--color-text-secondary);
+    font-size: 12px;
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+
+  dl {
+    display: grid;
+    gap: 12px;
+    grid-template-columns: 1fr;
+    margin: 16px 0;
+  }
+
+  dt {
+    color: var(--color-text-secondary);
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  dd {
+    font-size: 14px;
+    margin: 4px 0 0;
+  }
+}
+
+.card-heading {
+  align-items: flex-start;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: 120px 1fr;
+}
+
+@media (max-width: 640px) {
+  .page-header {
+    align-items: stretch;
+    flex-direction: column;
+
+    .btn {
+      width: 100%;
+    }
+  }
+
+  .list-shell {
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    overflow: visible;
+  }
+
+  .table-wrap {
+    display: none;
+  }
+
+  .document-cards {
+    display: grid;
+    gap: 12px;
+  }
+
+  .card-actions {
+    align-items: stretch;
+    flex-direction: column;
+
+    .btn {
+      width: 100%;
+    }
+  }
+
+  .card-heading {
+    grid-template-columns: 96px 1fr;
+  }
+
+  .document-thumbnail {
+    height: 128px;
+    width: 96px;
+  }
+}

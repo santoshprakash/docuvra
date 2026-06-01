@@ -1,0 +1,158 @@
+<section class="compare-panel">
+  <header class="panel-header">
+    <div>
+      <span class="side-label">{{ sideLabel }} document</span>
+      <h2>{{ documentTitle || 'No document selected' }}</h2>
+      @if (version) {
+        <p>V{{ version.versionNumber }} - {{ version.fileName }}</p>
+        <small>{{ version.uploadedAt | date: 'medium' }}</small>
+      }
+    </div>
+  </header>
+
+  @if (version && !isExcel) {
+    <div class="panel-controls">
+      <button class="icon-btn" type="button" [disabled]="currentPage <= 1 || loading" (click)="previousPage()" title="Previous page">&lt;</button>
+      <span class="page-count">{{ currentPage }} / {{ totalPages || '-' }}</span>
+      <button class="icon-btn" type="button" [disabled]="currentPage >= totalPages || loading" (click)="nextPage()" title="Next page">&gt;</button>
+      <button class="btn btn-secondary" type="button" [disabled]="zoom <= minZoom || loading" (click)="zoomOut()">Zoom -</button>
+      <button class="btn btn-secondary" type="button" [disabled]="zoom >= maxZoom || loading" (click)="zoomIn()">Zoom +</button>
+      <button class="btn btn-secondary" type="button" [disabled]="loading" (click)="fitWidth()">Fit width</button>
+      <button class="btn btn-secondary" type="button" (click)="download()">Download</button>
+    </div>
+  } @else if (version && isExcel) {
+    <div class="panel-controls excel-controls">
+      <span class="page-count">{{ excelSheetData?.rows?.length || 0 }} / {{ excelSheetData?.totalRows || '-' }} rows</span>
+      <a class="btn btn-secondary" [href]="'/excel-viewer/' + documentId + '/' + version.versionId">Open full viewer</a>
+      <button class="btn btn-secondary" type="button" (click)="download()">Download</button>
+    </div>
+  }
+
+  <main class="panel-shell" #panelShell (scroll)="onPanelScroll()">
+    @if (!version) {
+      <div class="panel-state">
+        <h3>Select a document and version</h3>
+        <p>This side will render independently when a file version is selected.</p>
+      </div>
+    } @else if (isExcel && loading && !excelSheetData) {
+      <div class="panel-state">
+        <h3>Loading spreadsheet</h3>
+        <p>Please wait while this side opens.</p>
+      </div>
+    } @else if (loading && !isExcel) {
+      <div class="panel-state">
+        <h3>Preparing document preview</h3>
+        <p>Please wait while this side opens.</p>
+      </div>
+    } @else if (errorMessage) {
+      <div class="panel-state error">
+        <h3>Preview unavailable</h3>
+        <p>{{ errorMessage }}</p>
+      </div>
+    } @else if (isExcel && excelSheetData) {
+      <section class="excel-compare">
+        @if (excelWorkbook?.sheets?.length) {
+          <nav class="excel-sheet-tabs" aria-label="Excel compare sheets">
+            @for (sheet of excelWorkbook?.sheets; track sheet.sheetIndex) {
+              <button
+                type="button"
+                [class.active]="sheet.sheetIndex === selectedExcelSheetIndex"
+                (click)="switchExcelSheet(sheet)"
+              >
+                {{ sheet.sheetName }}
+              </button>
+            }
+          </nav>
+        }
+
+        <div class="excel-grid-shell">
+          <table class="excel-grid">
+            <thead>
+              <tr>
+                <th class="corner-cell"></th>
+                @for (column of excelSheetData.columns; track column.index) {
+                  <th>{{ column.name }}</th>
+                }
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of excelSheetData.rows; track row.rowIndex) {
+                <tr>
+                  <th class="row-header">{{ row.rowIndex + 1 }}</th>
+                  @for (cell of row.cells; track cell.cellRef) {
+                    <td [class.has-comment]="excelCellHasComment(cell.rowIndex, cell.columnIndex)">
+                      {{ cell.displayValue }}
+                    </td>
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+
+          @if (excelHasMoreRows) {
+            <div class="load-more-row">
+              <button class="btn btn-secondary" type="button" [disabled]="loading" (click)="loadMoreExcelRows()">
+                {{ loading ? 'Loading' : 'Load more rows' }}
+              </button>
+            </div>
+          }
+        </div>
+      </section>
+    } @else {
+      <div class="page-stack">
+        @for (page of pages; track page.pageNumber) {
+          <div
+            class="page-stage"
+            [id]="side.toLowerCase() + '-compare-page-' + page.pageNumber"
+            [style.width.px]="page.width"
+            [style.height.px]="page.height"
+          >
+            <canvas #pdfCanvas class="pdf-canvas" [attr.aria-label]="sideLabel + ' PDF page ' + page.pageNumber"></canvas>
+            <div class="annotation-layer">
+              @for (annotation of pageAnnotations(page.pageNumber); track annotation.annotationId) {
+                <button
+                  class="annotation-item"
+                  type="button"
+                  [class.selected]="annotation.annotationId === selectedAnnotationId"
+                  [class.highlight]="annotation.annotationType === 'HIGHLIGHT'"
+                  [class.comment]="annotation.annotationType === 'COMMENT'"
+                  [class.rectangle]="annotation.annotationType === 'RECTANGLE'"
+                  [class.freehand]="annotation.annotationType === 'FREEHAND_DRAW'"
+                  [class.underline]="annotation.annotationType === 'UNDERLINE'"
+                  [class.strike]="annotation.annotationType === 'STRIKE_THROUGH'"
+                  [style]="annotationStyle(annotation)"
+                  (click)="selectAnnotation(annotation)"
+                  [title]="annotation.comments.length ? annotation.comments[0].commentText : 'Annotation'"
+                >
+                  @if (annotation.annotationType === 'FREEHAND_DRAW') {
+                    <svg class="freehand-svg" [attr.viewBox]="freehandViewBox(annotation, page)">
+                      <path class="freehand-path" [attr.d]="freehandPathFor(annotation, page)" />
+                    </svg>
+                  } @else if (annotation.annotationType === 'COMMENT') {
+                    <span>+</span>
+                  }
+                </button>
+              }
+            </div>
+            @if (!page.rendered) {
+              <div class="page-loading">Loading page {{ page.pageNumber }}</div>
+            }
+          </div>
+        }
+      </div>
+    }
+  </main>
+
+  @if (selectedAnnotation) {
+    <aside class="readonly-comments">
+      <strong>Page {{ selectedAnnotation.pageNumber }} comments</strong>
+      @if (selectedAnnotation.comments.length) {
+        @for (comment of selectedAnnotation.comments; track comment.commentId) {
+          <p>{{ comment.commentText }}</p>
+        }
+      } @else {
+        <p>No comments on this annotation.</p>
+      }
+    </aside>
+  }
+</section>

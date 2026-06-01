@@ -1,0 +1,59 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: docuvra
+      POSTGRES_USER: docuvra
+      POSTGRES_PASSWORD: docuvra
+    ports:
+      - "5432:5432"
+    volumes:
+      - docuvra_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U docuvra -d docuvra"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ../backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/docuvra
+      SPRING_DATASOURCE_USERNAME: docuvra
+      SPRING_DATASOURCE_PASSWORD: docuvra
+      DOCUVRA_STORAGE_BASE_PATH: /app/uploads
+      DOCUVRA_CONVERTED_BASE_PATH: /opt/docuvra/converted
+      DOCUVRA_OFFICE_PATH: soffice
+      DOCUVRA_IMAGEMAGICK_PATH: magick
+    volumes:
+      - docuvra_uploads:/app/uploads
+      - docuvra_converted:/opt/docuvra/converted
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  frontend:
+    build:
+      context: ../frontend
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "4200:80"
+
+volumes:
+  docuvra_postgres_data:
+    name: docuvra_postgres_data
+  docuvra_uploads:
+    name: docuvra_uploads
+  docuvra_converted:
+    name: docuvra_converted

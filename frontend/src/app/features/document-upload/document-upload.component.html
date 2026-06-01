@@ -1,0 +1,54 @@
+<div class="modal-backdrop" role="presentation">
+  <section class="upload-modal" role="dialog" aria-modal="true" aria-labelledby="upload-title">
+    <header>
+      <h2 id="upload-title">Upload document</h2>
+      <button class="close-button" type="button" aria-label="Close upload dialog" [disabled]="isUploading" (click)="closed.emit()">x</button>
+    </header>
+
+    <div
+      class="drop-zone"
+      [class.dragging]="isDragging"
+      (dragover)="onDragOver($event)"
+      (dragleave)="onDragLeave($event)"
+      (drop)="onDrop($event)"
+    >
+      <input #fileInput type="file" (change)="onFileSelected($event)" [disabled]="isUploading">
+      <strong>{{ selectedFile ? selectedFile.name : 'Drop a file here' }}</strong>
+      <span>{{ selectedFile ? 'Ready to upload' : 'or choose a file from your computer' }}</span>
+      <button class="btn btn-secondary" type="button" [disabled]="isUploading" (click)="fileInput.click()">Choose File</button>
+    </div>
+
+    <p class="note">Maximum file size: 50 MB</p>
+
+    @if (selectedFile) {
+      <div class="file-summary">
+        <span>{{ selectedFile.name }}</span>
+        <button type="button" [disabled]="isUploading" (click)="clearSelection()">Remove</button>
+      </div>
+    }
+
+    @if (isUploading || uploadProgress > 0) {
+      <div class="progress-wrap" aria-label="Upload progress">
+        <div class="progress-track">
+          <div class="progress-bar" [style.width.%]="uploadProgress"></div>
+        </div>
+        <span>{{ uploadProgress }}%</span>
+      </div>
+    }
+
+    @if (successMessage) {
+      <div class="upload-message success">{{ successMessage }}</div>
+    }
+
+    @if (errorMessage) {
+      <div class="upload-message error">{{ errorMessage }}</div>
+    }
+
+    <footer>
+      <button class="btn btn-secondary" type="button" [disabled]="isUploading" (click)="closed.emit()">Cancel</button>
+      <button class="btn btn-primary" type="button" [disabled]="!selectedFile || isUploading" (click)="upload()">
+        {{ isUploading ? 'Uploading' : 'Upload' }}
+      </button>
+    </footer>
+  </section>
+</div>

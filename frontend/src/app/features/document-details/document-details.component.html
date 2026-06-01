@@ -1,0 +1,141 @@
+<section class="page details-page">
+  <a class="back-link" routerLink="/documents">Back to documents</a>
+
+  @if (errorMessage) {
+    <div class="alert alert-error">{{ errorMessage }}</div>
+  }
+
+  @if (successMessage) {
+    <div class="alert alert-success">{{ successMessage }}</div>
+  }
+
+  @if (isLoading) {
+    <div class="details-loading">
+      <h1>Loading document</h1>
+      <p>Please wait while the version history loads.</p>
+    </div>
+  } @else if (document) {
+    <div class="details-header">
+      <div>
+        <h1>{{ document.title }}</h1>
+        <p>{{ document.documentId }}</p>
+      </div>
+      <button
+        class="btn btn-primary"
+        type="button"
+        [disabled]="!canUploadNewVersion()"
+        (click)="isUploadPanelOpen = !isUploadPanelOpen"
+      >
+        Upload New Version
+      </button>
+    </div>
+
+    <div class="summary-strip">
+      <div>
+        <span>Latest version</span>
+        <strong>V{{ document.latestVersionNumber }}</strong>
+      </div>
+      <div>
+        <span>Total versions</span>
+        <strong>{{ document.versions.length }} / 5</strong>
+      </div>
+      <p>Maximum 5 versions allowed</p>
+    </div>
+
+    @if (!canUploadNewVersion()) {
+      <div class="alert alert-muted">This document already has the maximum allowed 5 versions.</div>
+    }
+
+    @if (isUploadPanelOpen && canUploadNewVersion()) {
+      <section class="upload-panel" aria-labelledby="upload-version-title">
+        <div>
+          <h2 id="upload-version-title">Upload new version</h2>
+          <p>Select one file up to 50 MB. The original file quality is preserved.</p>
+        </div>
+
+        <div class="upload-row">
+          <input id="version-file" type="file" [disabled]="isUploading" (change)="onFileSelected($event)">
+          <label class="btn btn-secondary" for="version-file">Choose File</label>
+          @if (selectedFile) {
+            <span class="selected-file">{{ selectedFile.name }}</span>
+            <button class="text-button" type="button" [disabled]="isUploading" (click)="clearSelectedFile()">Remove</button>
+          }
+        </div>
+
+        @if (uploadErrorMessage) {
+          <div class="alert alert-error">{{ uploadErrorMessage }}</div>
+        }
+
+        <div class="upload-actions">
+          <button class="btn btn-secondary" type="button" [disabled]="isUploading" (click)="isUploadPanelOpen = false">Cancel</button>
+          <button class="btn btn-primary" type="button" [disabled]="!selectedFile || isUploading" (click)="uploadNewVersion()">
+            {{ isUploading ? 'Uploading' : 'Upload Version' }}
+          </button>
+        </div>
+      </section>
+    }
+
+    <div class="version-grid">
+      @for (version of document.versions; track version.versionId) {
+        <article class="version-card">
+          <a class="thumbnail thumbnail-link" [routerLink]="viewRoute(version)" [attr.aria-label]="'View version ' + version.versionNumber">
+            @if (shouldShowThumbnail(version)) {
+              <img
+                [src]="getThumbnailUrl(version)"
+                [alt]="'Version ' + version.versionNumber + ' thumbnail'"
+                (error)="markThumbnailFailed(version.versionId)"
+              >
+            } @else {
+              <span>{{ isPdf(version) ? 'PDF' : 'FILE' }}</span>
+            }
+          </a>
+
+          <div class="version-content">
+            <div class="version-title-row">
+              <div>
+                <h2>Version {{ version.versionNumber }}</h2>
+                <a class="file-name-link" [routerLink]="viewRoute(version)">{{ version.fileName }}</a>
+              </div>
+              <span class="status-pill">{{ version.status }}</span>
+            </div>
+
+            <dl class="version-meta">
+              <div>
+                <dt>MIME type</dt>
+                <dd>{{ version.mimeType }}</dd>
+              </div>
+              <div>
+                <dt>File size</dt>
+                <dd>{{ version.fileSize | fileSize }}</dd>
+              </div>
+              <div>
+                <dt>Uploaded</dt>
+                <dd>{{ version.uploadedAt | date: 'medium' }}</dd>
+              </div>
+            </dl>
+
+            <div class="version-actions">
+              <a class="btn btn-primary" [routerLink]="viewRoute(version)">View</a>
+              <a
+                class="btn btn-secondary"
+                routerLink="/compare"
+                [queryParams]="{ leftDocumentId: document.documentId, leftVersionId: version.versionId }"
+              >
+                Compare
+              </a>
+              <a class="btn btn-secondary" [href]="getDownloadUrl(version)">Download</a>
+              <button
+                class="btn btn-danger"
+                type="button"
+                [disabled]="document.versions.length === 1 || deletingVersionId === version.versionId"
+                (click)="deleteVersion(version)"
+              >
+                {{ deletingVersionId === version.versionId ? 'Deleting' : 'Delete Version' }}
+              </button>
+            </div>
+          </div>
+        </article>
+      }
+    </div>
+  }
+</section>

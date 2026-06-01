@@ -1,0 +1,144 @@
+<section class="page document-list-page">
+  <div class="page-header">
+    <div>
+      <h1>Documents</h1>
+      <p>Upload, version, preview, and download files.</p>
+    </div>
+    <button class="btn btn-primary" type="button" (click)="isUploadOpen = true">Upload Document</button>
+  </div>
+
+  @if (errorMessage) {
+    <div class="alert alert-error">{{ errorMessage }}</div>
+  }
+
+  <div class="list-shell">
+    @if (isLoading) {
+      <div class="empty-state">
+        <h2>Loading documents</h2>
+        <p>Please wait while the library refreshes.</p>
+      </div>
+    } @else if (documents.length === 0) {
+      <div class="empty-state">
+        <h2>No documents uploaded yet</h2>
+        <p>Start by uploading a PDF or any supported file up to 50 MB.</p>
+      </div>
+    } @else {
+      <div class="table-wrap">
+        <table class="documents-table">
+          <thead>
+            <tr>
+              <th>Thumbnail</th>
+              <th>Document name</th>
+              <th>Latest version</th>
+              <th>Created</th>
+              <th>Updated</th>
+              <th class="actions-col">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (document of documents; track document.documentId) {
+              <tr>
+                <td>
+                  <a
+                    class="document-thumbnail document-link"
+                    [routerLink]="['/documents', document.documentId]"
+                    [attr.aria-label]="'Open details for ' + document.title"
+                  >
+                    @if (shouldShowThumbnail(document)) {
+                      <img
+                        [src]="getThumbnailUrl(document)"
+                        [alt]="document.title + ' thumbnail'"
+                        (error)="markThumbnailFailed(document.documentId)"
+                      >
+                    } @else {
+                      <span>FILE</span>
+                    }
+                  </a>
+                </td>
+                <td>
+                  <a class="document-name-link" [routerLink]="['/documents', document.documentId]">
+                    <strong>{{ document.title }}</strong>
+                  </a>
+                  <span>{{ document.documentId }}</span>
+                </td>
+                <td>V{{ document.latestVersionNumber }}</td>
+                <td>{{ document.createdAt | date: 'mediumDate' }}</td>
+                <td>{{ document.updatedAt | date: 'medium' }}</td>
+                <td class="actions">
+                  <a class="btn btn-secondary" [routerLink]="['/documents', document.documentId]">View Details</a>
+                  <button
+                    class="btn btn-danger"
+                    type="button"
+                    [disabled]="deletingDocumentId === document.documentId"
+                    (click)="deleteDocument(document)"
+                  >
+                    {{ deletingDocumentId === document.documentId ? 'Deleting' : 'Delete' }}
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="document-cards" aria-label="Documents">
+        @for (document of documents; track document.documentId) {
+          <article class="document-card">
+            <div class="card-heading">
+              <a
+                class="document-thumbnail document-link"
+                [routerLink]="['/documents', document.documentId]"
+                [attr.aria-label]="'Open details for ' + document.title"
+              >
+                @if (shouldShowThumbnail(document)) {
+                  <img
+                    [src]="getThumbnailUrl(document)"
+                    [alt]="document.title + ' thumbnail'"
+                    (error)="markThumbnailFailed(document.documentId)"
+                  >
+                } @else {
+                  <span>FILE</span>
+                }
+              </a>
+              <div>
+                <a class="document-name-link" [routerLink]="['/documents', document.documentId]">
+                  <h2>{{ document.title }}</h2>
+                </a>
+                <p>{{ document.documentId }}</p>
+              </div>
+            </div>
+            <dl>
+              <div>
+                <dt>Latest version</dt>
+                <dd>V{{ document.latestVersionNumber }}</dd>
+              </div>
+              <div>
+                <dt>Created</dt>
+                <dd>{{ document.createdAt | date: 'mediumDate' }}</dd>
+              </div>
+              <div>
+                <dt>Updated</dt>
+                <dd>{{ document.updatedAt | date: 'medium' }}</dd>
+              </div>
+            </dl>
+            <div class="card-actions">
+              <a class="btn btn-secondary" [routerLink]="['/documents', document.documentId]">View Details</a>
+              <button
+                class="btn btn-danger"
+                type="button"
+                [disabled]="deletingDocumentId === document.documentId"
+                (click)="deleteDocument(document)"
+              >
+                {{ deletingDocumentId === document.documentId ? 'Deleting' : 'Delete' }}
+              </button>
+            </div>
+          </article>
+        }
+      </div>
+    }
+  </div>
+</section>
+
+@if (isUploadOpen) {
+  <app-document-upload (closed)="isUploadOpen = false" (uploaded)="onUploadComplete()" />
+}
