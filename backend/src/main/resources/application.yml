@@ -38,7 +38,7 @@ docuvra:
     max-rows: ${DOCUVRA_EXCEL_MAX_ROWS:1000}
     max-columns: ${DOCUVRA_EXCEL_MAX_COLUMNS:100}
   security:
-    login-enabled: ${DOCUVRA_LOGIN_ENABLED:true}
+    login-enabled: ${DOCUVRA_LOGIN_ENABLED:false}
     default-role-when-login-disabled: ${DOCUVRA_DEFAULT_ROLE_WHEN_LOGIN_DISABLED:STAFF}
     default-username-when-login-disabled: ${DOCUVRA_DEFAULT_USERNAME_WHEN_LOGIN_DISABLED:Staff}
     jwt-secret: ${DOCUVRA_JWT_SECRET:change-this-local-dev-secret-please}

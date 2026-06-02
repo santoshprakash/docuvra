@@ -176,7 +176,7 @@ export class DocumentDetailsComponent implements OnInit {
   }
 
   protected get canManageAssignments(): boolean {
-    return this.authService.currentUser()?.role === 'SUPERVISOR';
+    return false;
   }
 
   protected get availableStaffUsers(): UserResponse[] {
@@ -185,10 +185,7 @@ export class DocumentDetailsComponent implements OnInit {
   }
 
   protected get canRequestAssignment(): boolean {
-    return this.authService.currentUser()?.role === 'STAFF'
-      && !!this.document
-      && this.document.assignments.length === 0
-      && this.requestStatus !== 'pending';
+    return false;
   }
 
   protected requestAssignment(): void {
@@ -245,17 +242,7 @@ export class DocumentDetailsComponent implements OnInit {
   }
 
   private loadUsersForSupervisor(): void {
-    this.authService.loadCurrentUser().subscribe({
-      next: user => {
-        if (user.role !== 'SUPERVISOR') {
-          return;
-        }
-        this.authService.listUsers().subscribe({
-          next: users => this.users = users,
-          error: () => this.assignmentErrorMessage = 'Unable to load staff users.'
-        });
-      }
-    });
+    this.users = [];
   }
 
   private refreshStaffRequestStatus(): void {

@@ -1,22 +1,37 @@
 <section class="viewer-page">
-  <header class="viewer-header">
-    <a class="btn btn-secondary" [routerLink]="['/documents', documentId]">Back</a>
-    <div class="file-title">
-      <strong>{{ selectedVersion?.fileName || 'Document viewer' }}</strong>
-      @if (selectedVersion) {
-        <span>Version {{ selectedVersion.versionNumber }}</span>
-      }
-    </div>
-  </header>
-
   @if (selectedVersion) {
     <div class="viewer-toolbar">
-      <span class="page-count">{{ currentPage }} / {{ totalPages || '-' }}</span>
-      <button class="btn btn-secondary" type="button" [disabled]="zoom <= minZoom || isPdfLoading" (click)="zoomOut()">Zoom Out</button>
-      <button class="btn btn-secondary" type="button" [disabled]="zoom >= maxZoom || isPdfLoading" (click)="zoomIn()">Zoom In</button>
-      <button class="btn btn-secondary" type="button" [disabled]="isPdfLoading" (click)="fitWidth()">Fit Width</button>
-      <button class="btn btn-secondary" type="button" (click)="download()">Download</button>
-      <button class="btn btn-primary" type="button" (click)="print()">Print</button>
+      <div class="viewer-title-group">
+        <a class="viewer-icon-btn" [routerLink]="['/documents', documentId]" title="Back" aria-label="Back">
+          <svg lucideArrowLeft size="18" aria-hidden="true"></svg>
+        </a>
+        <div class="file-title">
+          <strong>{{ selectedVersion.fileName }}</strong>
+          <span>Version {{ selectedVersion.versionNumber }}</span>
+        </div>
+      </div>
+      <div class="viewer-toolbar-actions">
+        <span class="page-count">Page {{ currentPage }} / {{ totalPages || '-' }}</span>
+        <div class="viewer-action-group" aria-label="Document view controls">
+          <button class="viewer-icon-btn" type="button" [disabled]="zoom <= minZoom || isPdfLoading" title="Zoom out" aria-label="Zoom out" (click)="zoomOut()">
+            <svg lucideZoomOut size="18" aria-hidden="true"></svg>
+          </button>
+          <button class="viewer-icon-btn" type="button" [disabled]="zoom >= maxZoom || isPdfLoading" title="Zoom in" aria-label="Zoom in" (click)="zoomIn()">
+            <svg lucideZoomIn size="18" aria-hidden="true"></svg>
+          </button>
+          <button class="viewer-icon-btn" type="button" [disabled]="isPdfLoading" title="Fit width" aria-label="Fit width" (click)="fitWidth()">
+            <svg lucideMaximize2 size="18" aria-hidden="true"></svg>
+          </button>
+        </div>
+        <div class="viewer-action-group" aria-label="Document actions">
+          <button class="viewer-icon-btn" type="button" title="Download" aria-label="Download" (click)="download()">
+            <svg lucideDownload size="18" aria-hidden="true"></svg>
+          </button>
+          <button class="viewer-icon-btn primary" type="button" title="Print" aria-label="Print" (click)="print()">
+            <svg lucidePrinter size="18" aria-hidden="true"></svg>
+          </button>
+        </div>
+      </div>
     </div>
   }
 
@@ -152,7 +167,7 @@
         [annotations]="annotations"
         [selectedAnnotationId]="selectedAnnotationId"
         [canDelete]="canAnnotate"
-        [canReply]="true"
+        [canReply]="canReply"
         [mentionableUsers]="mentionableUsers"
         (annotationSelected)="selectAnnotation($event, false)"
         (commentDeleted)="deleteCommentAndLinkedAnnotation($event.commentId, $event.annotationId)"

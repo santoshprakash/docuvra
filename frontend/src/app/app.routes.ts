@@ -6,7 +6,6 @@ import { CompareComponent } from './features/compare/compare.component';
 import { DocumentDetailsComponent } from './features/document-details/document-details.component';
 import { DocumentListComponent } from './features/document-list/document-list.component';
 import { ExcelViewerComponent } from './features/excel-viewer/excel-viewer.component';
-import { LoginComponent } from './features/login/login.component';
 import { UserManagementComponent } from './features/user-management/user-management.component';
 import { ViewerComponent } from './features/viewer/viewer.component';
 
@@ -43,7 +42,7 @@ export const routes: Routes = [
   },
   {
     path: 'login',
-    component: LoginComponent
+    redirectTo: 'documents'
   },
   {
     path: 'change-password',

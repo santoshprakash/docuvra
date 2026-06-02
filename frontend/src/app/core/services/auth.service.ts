@@ -37,6 +37,7 @@ interface ChangePasswordRequest {
 export class AuthService {
   private readonly baseUrl = `${environment.apiUrl}`;
   private readonly tokenKey = 'docuvra.auth.token';
+  private readonly roleKey = 'docuvra.open.role';
 
   readonly currentUser = signal<CurrentUserResponse | null>(null);
 
@@ -48,6 +49,24 @@ export class AuthService {
 
   get token(): string | null {
     return window.localStorage.getItem(this.tokenKey);
+  }
+
+  get openRole(): Extract<UserRole, 'NORMAL_USER' | 'STAFF'> {
+    return window.localStorage.getItem(this.roleKey) === 'NORMAL_USER' ? 'NORMAL_USER' : 'STAFF';
+  }
+
+  switchOpenRole(role: Extract<UserRole, 'NORMAL_USER' | 'STAFF'>): void {
+    window.localStorage.setItem(this.roleKey, role);
+    const current = this.currentUser();
+    this.currentUser.set({
+      userId: role === 'NORMAL_USER' ? '10000000-0000-0000-0000-000000000001' : '10000000-0000-0000-0000-000000000002',
+      username: role === 'NORMAL_USER' ? 'Normal User' : 'Staff',
+      email: current?.email ?? null,
+      mobile: current?.mobile ?? null,
+      role,
+      forcePasswordChange: false,
+      loginEnabled: false
+    });
   }
 
   login(request: LoginRequest): Observable<AuthResponse> {
@@ -89,7 +108,7 @@ export class AuthService {
   logout(): void {
     window.localStorage.removeItem(this.tokenKey);
     this.currentUser.set(null);
-    void this.router.navigate(['/login']);
+    void this.router.navigate(['/documents']);
   }
 
   private storeSession(response: AuthResponse): void {

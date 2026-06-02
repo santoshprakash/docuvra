@@ -4,6 +4,7 @@ import com.docuvra.dto.AnnotationCommentRequest;
 import com.docuvra.dto.AnnotationCommentResponse;
 import com.docuvra.dto.AnnotationRequest;
 import com.docuvra.dto.AnnotationResponse;
+import com.docuvra.config.SecurityProperties;
 import com.docuvra.entity.AnnotationCommentEntity;
 import com.docuvra.entity.AnnotationEntity;
 import com.docuvra.entity.CommentMentionEntity;
@@ -36,6 +37,7 @@ public class AnnotationService {
     private final CurrentUserService currentUserService;
     private final DocumentAccessService documentAccessService;
     private final NotificationService notificationService;
+    private final SecurityProperties securityProperties;
 
     @Transactional
     public AnnotationResponse createAnnotation(UUID documentId, UUID versionId, AnnotationRequest request) {
@@ -278,6 +280,9 @@ public class AnnotationService {
     }
 
     private boolean canViewAnnotation(UserEntity user, AnnotationEntity annotation) {
+        if (!securityProperties.loginEnabled() && user.getRole() != com.docuvra.enums.UserRole.NORMAL_USER) {
+            return true;
+        }
         if (user.getRole() != com.docuvra.enums.UserRole.NORMAL_USER) {
             return true;
         }
@@ -285,6 +290,9 @@ public class AnnotationService {
     }
 
     private boolean canViewComment(UserEntity user, AnnotationCommentEntity comment) {
+        if (!securityProperties.loginEnabled() && user.getRole() != com.docuvra.enums.UserRole.NORMAL_USER) {
+            return true;
+        }
         if (user.getRole() != com.docuvra.enums.UserRole.NORMAL_USER) {
             return true;
         }
@@ -293,6 +301,9 @@ public class AnnotationService {
     }
 
     private boolean canNormalUserReply(UserEntity user, AnnotationEntity annotation) {
+        if (!securityProperties.loginEnabled() && user.getRole() != com.docuvra.enums.UserRole.NORMAL_USER) {
+            return true;
+        }
         if (user.getRole() != com.docuvra.enums.UserRole.NORMAL_USER) {
             return true;
         }

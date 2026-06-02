@@ -9,6 +9,7 @@ import com.docuvra.dto.RegisterNormalUserRequest;
 import com.docuvra.dto.UserResponse;
 import com.docuvra.entity.UserEntity;
 import com.docuvra.enums.UserRole;
+import com.docuvra.config.SecurityProperties;
 import com.docuvra.exception.AuthException;
 import com.docuvra.exception.ForbiddenException;
 import com.docuvra.repository.UserRepository;
@@ -30,6 +31,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenService jwtTokenService;
     private final CurrentUserService currentUserService;
+    private final SecurityProperties securityProperties;
 
     @Transactional
     public AuthResponse login(LoginRequest request) {
@@ -51,6 +53,7 @@ public class AuthService {
 
     @Transactional
     public AuthResponse signup(RegisterNormalUserRequest request) {
+        ensureLoginEnabled("Signup is disabled while login is disabled.");
         UserEntity user = createUser(
                 request.username(),
                 request.email(),
@@ -64,6 +67,7 @@ public class AuthService {
 
     @Transactional(readOnly = true)
     public List<UserResponse> listUsers() {
+        ensureLoginEnabled("User management is disabled while login is disabled.");
         currentUserService.requireRole(UserRole.SUPERVISOR);
         return userRepository.findAllByOrderByCreatedAtDesc().stream()
                 .map(this::toUserResponse)
@@ -85,6 +89,7 @@ public class AuthService {
 
     @Transactional(readOnly = true)
     public List<UserResponse> listStaffUsers() {
+        ensureLoginEnabled("Staff management is disabled while login is disabled.");
         currentUserService.requireRole(UserRole.SUPERVISOR);
         return userRepository.findAllByRoleAndActiveTrue(UserRole.STAFF).stream()
                 .map(this::toUserResponse)
@@ -102,6 +107,7 @@ public class AuthService {
 
     @Transactional
     public UserResponse createManagedUser(CreateUserRequest request) {
+        ensureLoginEnabled("User management is disabled while login is disabled.");
         currentUserService.requireRole(UserRole.SUPERVISOR);
         if (request.role() == UserRole.NORMAL_USER) {
             throw new ForbiddenException("Supervisors can create only staff and supervisor users here. Normal users can use signup.");
@@ -197,5 +203,11 @@ public class AuthService {
 
     private String normalizeMobile(String value) {
         return value == null ? "" : value.replaceAll("\\s+", "").trim();
+    }
+
+    private void ensureLoginEnabled(String message) {
+        if (!securityProperties.loginEnabled()) {
+            throw new ForbiddenException(message);
+        }
     }
 }

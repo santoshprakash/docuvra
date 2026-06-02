@@ -12,6 +12,8 @@ import { UserResponse } from '../../../core/models/auth.model';
   styleUrl: './comment-panel.component.scss'
 })
 export class CommentPanelComponent {
+  private static readonly normalUserId = '10000000-0000-0000-0000-000000000001';
+
   @Input() annotations: AnnotationResponse[] = [];
   @Input() selectedAnnotationId: string | null = null;
   @Input() canDelete = true;
@@ -45,6 +47,14 @@ export class CommentPanelComponent {
 
   protected authorName(annotation: AnnotationResponse): string {
     return annotation.comments[0]?.createdByName || annotation.createdByName || 'Staff';
+  }
+
+  protected staffComments(annotation: AnnotationResponse): AnnotationResponse['comments'] {
+    return annotation.comments.filter(comment => !this.isNormalUserComment(comment));
+  }
+
+  protected normalUserComments(annotation: AnnotationResponse): AnnotationResponse['comments'] {
+    return annotation.comments.filter(comment => this.isNormalUserComment(comment));
   }
 
   protected annotationMeta(annotation: AnnotationResponse): string {
@@ -115,5 +125,10 @@ export class CommentPanelComponent {
       .split('_')
       .map(part => part.charAt(0).toUpperCase() + part.slice(1))
       .join(' ');
+  }
+
+  private isNormalUserComment(comment: AnnotationResponse['comments'][number]): boolean {
+    return comment.createdByUserId === CommentPanelComponent.normalUserId
+      || comment.createdByName.toLowerCase().includes('normal');
   }
 }

@@ -22,8 +22,21 @@
           >
             <strong class="comment-author">{{ authorName(annotation) }}</strong>
             <span>{{ annotationMeta(annotation) }}</span>
-            @for (comment of annotation.comments; track comment.commentId) {
-              <p>{{ comment.commentText }}</p>
+            @if (staffComments(annotation).length) {
+              <div class="comment-group staff-comments">
+                <b>Staff comment</b>
+                @for (comment of staffComments(annotation); track comment.commentId) {
+                  <p>{{ comment.commentText }}</p>
+                }
+              </div>
+            }
+            @if (normalUserComments(annotation).length) {
+              <div class="comment-group normal-comments">
+                <b>Normal user reply</b>
+                @for (comment of normalUserComments(annotation); track comment.commentId) {
+                  <p>{{ comment.commentText }}</p>
+                }
+              </div>
             }
             <div class="comment-meta">
               <time>{{ annotation.createdAt | date: 'medium' }}</time>

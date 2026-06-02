@@ -1,5 +1,6 @@
 import { Component, ElementRef, HostListener, OnDestroy, OnInit, QueryList, ViewChild, ViewChildren } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { LucideArrowLeft, LucideDownload, LucideMaximize2, LucidePrinter, LucideZoomIn, LucideZoomOut } from '@lucide/angular';
 import * as pdfjsLib from 'pdfjs-dist';
 import type { PDFDocumentProxy, RenderTask } from 'pdfjs-dist';
 
@@ -59,7 +60,17 @@ interface AnnotationInteraction {
 @Component({
   selector: 'app-viewer',
   standalone: true,
-  imports: [RouterLink, AnnotationToolbarComponent, CommentPanelComponent],
+  imports: [
+    RouterLink,
+    AnnotationToolbarComponent,
+    CommentPanelComponent,
+    LucideArrowLeft,
+    LucideDownload,
+    LucideMaximize2,
+    LucidePrinter,
+    LucideZoomIn,
+    LucideZoomOut
+  ],
   templateUrl: './viewer.component.html',
   styleUrl: './viewer.component.scss'
 })
@@ -136,6 +147,11 @@ export class ViewerComponent implements OnInit, OnDestroy {
   protected get canAnnotate(): boolean {
     const role = this.authService.currentUser()?.role;
     return role === 'STAFF' || role === 'SUPERVISOR';
+  }
+
+  protected get canReply(): boolean {
+    const role = this.authService.currentUser()?.role;
+    return role === 'STAFF' || role === 'SUPERVISOR' || role === 'NORMAL_USER';
   }
 
   protected pageAnnotations(pageNumber: number): AnnotationResponse[] {

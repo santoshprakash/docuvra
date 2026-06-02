@@ -14,6 +14,7 @@ import { NotificationService } from './core/services/notification.service';
 })
 export class AppComponent implements OnInit {
   protected readonly currentUser = this.authService.currentUser;
+  protected readonly auth = this.authService;
   protected readonly unreadCount = this.notificationService.unreadCount;
   protected notifications: NotificationResponse[] = [];
   protected isNotificationsOpen = false;
@@ -25,16 +26,23 @@ export class AppComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    if (this.authService.token) {
-      this.authService.loadCurrentUser().subscribe({
-        next: () => this.notificationService.loadSummary().subscribe(),
-        error: () => this.authService.logout()
-      });
-    }
+    this.authService.loadCurrentUser().subscribe({
+      next: user => {
+        if (user.loginEnabled) {
+          this.notificationService.loadSummary().subscribe();
+        }
+      },
+      error: () => this.authService.switchOpenRole(this.authService.openRole)
+    });
   }
 
   protected logout(): void {
     this.authService.logout();
+  }
+
+  protected switchRole(role: 'STAFF' | 'NORMAL_USER'): void {
+    this.authService.switchOpenRole(role);
+    window.location.reload();
   }
 
   protected toggleNotifications(): void {

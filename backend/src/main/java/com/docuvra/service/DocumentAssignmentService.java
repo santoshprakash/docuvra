@@ -1,5 +1,6 @@
 package com.docuvra.service;
 
+import com.docuvra.config.SecurityProperties;
 import com.docuvra.dto.AssignDocumentRequest;
 import com.docuvra.dto.DocumentAssignmentResponse;
 import com.docuvra.entity.DocumentAssignmentEntity;
@@ -31,9 +32,11 @@ public class DocumentAssignmentService {
     private final UserRepository userRepository;
     private final CurrentUserService currentUserService;
     private final NotificationService notificationService;
+    private final SecurityProperties securityProperties;
 
     @Transactional(readOnly = true)
     public List<DocumentAssignmentResponse> listAssignments(UUID documentId) {
+        ensureAssignmentEnabled();
         currentUserService.requireRole(UserRole.SUPERVISOR);
         ensureDocumentExists(documentId);
         return activeAssignments(documentId);
@@ -41,6 +44,7 @@ public class DocumentAssignmentService {
 
     @Transactional
     public DocumentAssignmentResponse assign(UUID documentId, AssignDocumentRequest request) {
+        ensureAssignmentEnabled();
         currentUserService.requireRole(UserRole.SUPERVISOR);
         DocumentEntity document = documentRepository.findById(documentId)
                 .orElseThrow(() -> new DocumentNotFoundException(documentId));
@@ -88,6 +92,7 @@ public class DocumentAssignmentService {
 
     @Transactional
     public void removeAssignment(UUID documentId, UUID assignmentId) {
+        ensureAssignmentEnabled();
         currentUserService.requireRole(UserRole.SUPERVISOR);
         ensureDocumentExists(documentId);
         DocumentAssignmentEntity assignment = documentAssignmentRepository.findById(assignmentId)
@@ -99,6 +104,7 @@ public class DocumentAssignmentService {
 
     @Transactional
     public void removeAssignmentByStaff(UUID documentId, UUID staffUserId) {
+        ensureAssignmentEnabled();
         currentUserService.requireRole(UserRole.SUPERVISOR);
         ensureDocumentExists(documentId);
         documentAssignmentRepository.findByDocumentIdAndAssignedToUserId(documentId, staffUserId)
@@ -132,5 +138,11 @@ public class DocumentAssignmentService {
                 assignment.getCreatedAt(),
                 assignment.getAssignedByUser() == null ? null : assignment.getAssignedByUser().getUsername()
         );
+    }
+
+    private void ensureAssignmentEnabled() {
+        if (!securityProperties.loginEnabled()) {
+            throw new ForbiddenException("Document assignment is disabled while login is disabled.");
+        }
     }
 }

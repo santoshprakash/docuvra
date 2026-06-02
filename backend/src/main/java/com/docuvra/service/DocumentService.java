@@ -8,6 +8,7 @@ import com.docuvra.dto.ConvertedStatusResponse;
 import com.docuvra.dto.DocumentAssignmentResponse;
 import com.docuvra.dto.ThumbnailResult;
 import com.docuvra.dto.UploadNewVersionResponse;
+import com.docuvra.config.SecurityProperties;
 import com.docuvra.entity.DocumentEntity;
 import com.docuvra.entity.DocumentVersionEntity;
 import com.docuvra.entity.UserEntity;
@@ -55,6 +56,7 @@ public class DocumentService {
     private final ThumbnailService thumbnailService;
     private final CurrentUserService currentUserService;
     private final DocumentAccessService documentAccessService;
+    private final SecurityProperties securityProperties;
 
     @Transactional
     public DocumentUploadResponse uploadFreshDocument(MultipartFile file) {
@@ -171,11 +173,13 @@ public class DocumentService {
     @Transactional(readOnly = true)
     public List<DocumentListResponse> listDocuments() {
         UserEntity user = currentUserService.currentUserEntity();
-        List<DocumentEntity> documents = switch (user.getRole()) {
-            case SUPERVISOR -> documentRepository.findAllByOrderByUpdatedAtDesc();
-            case NORMAL_USER -> documentRepository.findAllByUploadedByUserIdOrderByUpdatedAtDesc(user.getId());
-            case STAFF -> documentRepository.findStaffVisibleDocuments(user.getId());
-        };
+        List<DocumentEntity> documents = !securityProperties.loginEnabled()
+                ? documentRepository.findAllByOrderByUpdatedAtDesc()
+                : switch (user.getRole()) {
+                    case SUPERVISOR -> documentRepository.findAllByOrderByUpdatedAtDesc();
+                    case NORMAL_USER -> documentRepository.findAllByUploadedByUserIdOrderByUpdatedAtDesc(user.getId());
+                    case STAFF -> documentRepository.findStaffVisibleDocuments(user.getId());
+                };
         return documents
                 .stream()
                 .map(this::toListResponse)
@@ -409,6 +413,9 @@ public class DocumentService {
 
     private void ensureCanAccess(DocumentEntity document) {
         UserEntity user = currentUserService.currentUserEntity();
+        if (!securityProperties.loginEnabled()) {
+            return;
+        }
         if (user.getRole() == UserRole.SUPERVISOR) {
             return;
         }

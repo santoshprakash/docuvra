@@ -1,7 +1,8 @@
 .app-header {
   align-items: center;
-  background: var(--color-surface);
+  background: rgba(255, 255, 255, 0.96);
   border-bottom: 1px solid var(--color-border);
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.02);
   display: grid;
   grid-template-columns: auto 1fr auto;
   gap: 18px;
@@ -15,15 +16,16 @@
 .brand {
   align-items: center;
   display: inline-flex;
-  font-size: 16px;
-  font-weight: 700;
+  font-size: 17px;
+  font-weight: 800;
   gap: 10px;
 }
 
 .brand-mark {
   align-items: center;
-  background: var(--color-primary);
-  border-radius: 8px;
+  background: #162033;
+  border-radius: 7px;
+  box-shadow: inset 0 -8px 16px rgba(36, 87, 214, 0.28);
   color: #ffffff;
   display: inline-flex;
   height: 32px;
@@ -38,6 +40,16 @@
   font-size: 14px;
   font-weight: 600;
   gap: 16px;
+}
+
+.app-nav a {
+  border-radius: 7px;
+  padding: 8px 10px;
+}
+
+.app-nav a:hover {
+  background: var(--color-surface-muted);
+  color: var(--color-text-primary);
 }
 
 .account-actions {
@@ -60,11 +72,34 @@
 .account-actions button {
   background: transparent;
   border: 1px solid var(--color-border);
-  border-radius: 8px;
+  border-radius: 7px;
   color: var(--color-text);
   cursor: pointer;
   font: inherit;
   padding: 8px 10px;
+}
+
+.account-actions button:hover {
+  background: var(--color-surface-muted);
+}
+
+.role-switch {
+  align-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: 7px;
+  background: #f8fafc;
+  display: inline-flex;
+  overflow: hidden;
+}
+
+.role-switch button {
+  border: 0;
+  border-radius: 0;
+}
+
+.role-switch button.active {
+  background: #162033;
+  color: #ffffff;
 }
 
 .notification-wrap {
@@ -144,5 +179,22 @@
   .app-nav,
   .account-actions {
     flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .app-nav a {
+    background: var(--color-surface-muted);
+  }
+
+  .account-actions {
+    align-items: stretch;
+  }
+
+  .role-switch {
+    width: 100%;
+  }
+
+  .role-switch button {
+    flex: 1 1 0;
   }
 }

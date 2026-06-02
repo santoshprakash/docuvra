@@ -1,5 +1,6 @@
 package com.docuvra.service;
 
+import com.docuvra.config.SecurityProperties;
 import com.docuvra.entity.DocumentEntity;
 import com.docuvra.entity.UserEntity;
 import com.docuvra.enums.DocumentAssignmentStatus;
@@ -17,12 +18,16 @@ public class DocumentAccessService {
 
     private final DocumentAssignmentRepository documentAssignmentRepository;
     private final DocumentRepository documentRepository;
+    private final SecurityProperties securityProperties;
 
     public boolean isDocumentUnassigned(UUID documentId) {
         return !documentAssignmentRepository.existsByDocumentIdAndStatus(documentId, DocumentAssignmentStatus.ASSIGNED);
     }
 
     public boolean canViewDocument(UserEntity user, DocumentEntity document) {
+        if (!securityProperties.loginEnabled()) {
+            return true;
+        }
         if (user.getRole() == UserRole.SUPERVISOR) {
             return true;
         }
@@ -33,6 +38,9 @@ public class DocumentAccessService {
     }
 
     public boolean canCreateAnnotation(UserEntity user) {
+        if (!securityProperties.loginEnabled()) {
+            return user.getRole() == UserRole.STAFF;
+        }
         return user.getRole() == UserRole.SUPERVISOR || user.getRole() == UserRole.STAFF;
     }
 
@@ -41,10 +49,16 @@ public class DocumentAccessService {
     }
 
     public boolean canDeleteComment(UserEntity user) {
+        if (!securityProperties.loginEnabled()) {
+            return user.getRole() == UserRole.STAFF;
+        }
         return user.getRole() == UserRole.SUPERVISOR || user.getRole() == UserRole.STAFF;
     }
 
     public boolean canDeleteAnnotation(UserEntity user) {
+        if (!securityProperties.loginEnabled()) {
+            return user.getRole() == UserRole.STAFF;
+        }
         return user.getRole() == UserRole.SUPERVISOR || user.getRole() == UserRole.STAFF;
     }
 

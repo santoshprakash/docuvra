@@ -1,5 +1,6 @@
 package com.docuvra.service;
 
+import com.docuvra.config.SecurityProperties;
 import com.docuvra.dto.AssignDocumentRequest;
 import com.docuvra.dto.AssignmentRequestResponse;
 import com.docuvra.dto.RejectAssignmentRequest;
@@ -31,9 +32,11 @@ public class AssignmentRequestService {
     private final DocumentAccessService documentAccessService;
     private final DocumentAssignmentService documentAssignmentService;
     private final NotificationService notificationService;
+    private final SecurityProperties securityProperties;
 
     @Transactional
     public AssignmentRequestResponse requestDocument(UUID documentId) {
+        ensureAssignmentRequestsEnabled();
         UserEntity user = currentUserService.currentUserEntity();
         if (user.getRole() != UserRole.STAFF) {
             throw new ForbiddenException("Only staff users can request documents.");
@@ -66,6 +69,7 @@ public class AssignmentRequestService {
 
     @Transactional(readOnly = true)
     public List<AssignmentRequestResponse> pendingRequests() {
+        ensureAssignmentRequestsEnabled();
         currentUserService.requireRole(UserRole.SUPERVISOR);
         return requestRepository.findAllByStatusOrderByRequestedAtDesc(DocumentAssignmentRequestStatus.PENDING)
                 .stream()
@@ -75,6 +79,7 @@ public class AssignmentRequestService {
 
     @Transactional
     public AssignmentRequestResponse approve(UUID requestId) {
+        ensureAssignmentRequestsEnabled();
         currentUserService.requireRole(UserRole.SUPERVISOR);
         UserEntity supervisor = currentUserService.currentUserEntity();
         DocumentAssignmentRequestEntity request = getPending(requestId);
@@ -97,6 +102,7 @@ public class AssignmentRequestService {
 
     @Transactional
     public AssignmentRequestResponse reject(UUID requestId, RejectAssignmentRequest rejectRequest) {
+        ensureAssignmentRequestsEnabled();
         currentUserService.requireRole(UserRole.SUPERVISOR);
         UserEntity supervisor = currentUserService.currentUserEntity();
         DocumentAssignmentRequestEntity request = getPending(requestId);
@@ -136,5 +142,11 @@ public class AssignmentRequestService {
                 request.getRequestedAt(),
                 request.getReviewComment()
         );
+    }
+
+    private void ensureAssignmentRequestsEnabled() {
+        if (!securityProperties.loginEnabled()) {
+            throw new ForbiddenException("Assignment requests are disabled while login is disabled.");
+        }
     }
 }

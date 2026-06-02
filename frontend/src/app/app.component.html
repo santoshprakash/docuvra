@@ -1,20 +1,27 @@
 <header class="app-header">
   <a class="brand" routerLink="/documents" aria-label="Docuvra home">
-    <span class="brand-mark">S</span>
+    <span class="brand-mark">D</span>
     <span>Docuvra</span>
   </a>
   <nav class="app-nav" aria-label="Primary navigation">
     <a routerLink="/documents">Documents</a>
-    @if (currentUser()?.role === 'SUPERVISOR') {
+    @if (currentUser()?.loginEnabled && currentUser()?.role === 'SUPERVISOR') {
       <a routerLink="/users">Users</a>
       <a routerLink="/assignment-requests">Requests</a>
     }
-    @if (currentUser()) {
+    @if (currentUser()?.loginEnabled) {
       <a routerLink="/change-password">Password</a>
     }
   </nav>
   <div class="account-actions">
     @if (currentUser(); as user) {
+      @if (!user.loginEnabled) {
+        <div class="role-switch" aria-label="Role switch">
+          <button type="button" [class.active]="user.role === 'STAFF'" (click)="switchRole('STAFF')">Staff</button>
+          <button type="button" [class.active]="user.role === 'NORMAL_USER'" (click)="switchRole('NORMAL_USER')">Normal user</button>
+        </div>
+      }
+      @if (user.loginEnabled) {
       <div class="notification-wrap">
         <button class="notification-button" type="button" aria-label="Notifications" (click)="toggleNotifications()">
           Bell
@@ -40,10 +47,11 @@
           </div>
         }
       </div>
+      }
       <span>{{ user.username }}</span>
-      <button type="button" (click)="logout()">Sign out</button>
-    } @else {
-      <a routerLink="/login">Sign in</a>
+      @if (user.loginEnabled) {
+        <button type="button" (click)="logout()">Sign out</button>
+      }
     }
   </div>
 </header>

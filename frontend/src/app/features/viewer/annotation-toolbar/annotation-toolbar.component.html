@@ -1,15 +1,39 @@
 <div class="annotation-toolbar" aria-label="Annotation tools">
-  <div class="color-tools" aria-label="Annotation colors">
-    @for (color of colors; track color.value) {
-      <button
-        class="color-button"
-        type="button"
-        [class.active]="color.value.toLowerCase() === selectedColor.toLowerCase()"
-        [style.background]="color.value"
-        [attr.aria-label]="color.label"
-        [title]="color.label"
-        (click)="colorSelected.emit(color.value)"
-      ></button>
+  <div class="color-picker">
+    <button
+      class="tool-button color-trigger"
+      type="button"
+      title="Annotation color"
+      aria-label="Annotation color"
+      [attr.aria-expanded]="isColorPickerOpen"
+      (click)="isColorPickerOpen = !isColorPickerOpen"
+    >
+      <svg lucidePalette size="18" aria-hidden="true"></svg>
+      <span class="active-color" [style.background]="selectedColor"></span>
+      <span class="tool-label">Color</span>
+    </button>
+
+    @if (isColorPickerOpen) {
+      <div class="color-popover" aria-label="Annotation colors">
+        <strong>Annotation color</strong>
+        <div class="color-grid">
+          @for (color of colors; track color.value) {
+            <button
+              class="color-button"
+              type="button"
+              [class.active]="color.value.toLowerCase() === selectedColor.toLowerCase()"
+              [style.background]="color.value"
+              [attr.aria-label]="color.label"
+              [title]="color.label"
+              (click)="selectColor(color.value)"
+            ></button>
+          }
+        </div>
+        <label class="custom-color">
+          <span>Custom</span>
+          <input type="color" [value]="selectedColor" (input)="selectColor($any($event.target).value)" />
+        </label>
+      </div>
     }
   </div>
 
@@ -23,7 +47,31 @@
       [title]="item.label"
       (click)="toolSelected.emit(item.tool)"
     >
-      <span class="tool-icon" aria-hidden="true">{{ item.icon }}</span>
+      <span class="tool-icon" aria-hidden="true">
+        @switch (item.tool) {
+          @case ('SELECT') {
+            <svg lucideMousePointer2 size="18"></svg>
+          }
+          @case ('HIGHLIGHT') {
+            <svg lucideHighlighter size="18"></svg>
+          }
+          @case ('COMMENT') {
+            <svg lucideMessageSquarePlus size="18"></svg>
+          }
+          @case ('RECTANGLE') {
+            <svg lucideSquare size="18"></svg>
+          }
+          @case ('FREEHAND_DRAW') {
+            <svg lucidePencil size="18"></svg>
+          }
+          @case ('UNDERLINE') {
+            <svg lucideUnderline size="18"></svg>
+          }
+          @case ('STRIKE_THROUGH') {
+            <svg lucideStrikethrough size="18"></svg>
+          }
+        }
+      </span>
       <span class="tool-label">{{ item.label }}</span>
     </button>
   }
@@ -36,7 +84,9 @@
     [disabled]="!canDelete"
     (click)="deleteSelected.emit()"
   >
-    <span class="tool-icon" aria-hidden="true">X</span>
+    <span class="tool-icon" aria-hidden="true">
+      <svg lucideTrash2 size="18"></svg>
+    </span>
     <span class="tool-label">Delete</span>
   </button>
 </div>

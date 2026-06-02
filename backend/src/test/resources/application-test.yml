@@ -15,6 +15,7 @@ docuvra:
     base-path: target/test-storage/uploads
     converted-path: target/test-storage/converted
   security:
+    login-enabled: true
     jwt-secret: test-secret-with-enough-length-for-hmac-signing
     jwt-expiration-minutes: 60
   converter:
