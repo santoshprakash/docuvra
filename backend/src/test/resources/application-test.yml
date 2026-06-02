@@ -1,11 +1,19 @@
 spring:
+  datasource:
+    url: jdbc:h2:mem:docuvra-test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: create-drop
     open-in-view: false
   flyway:
-    enabled: true
+    enabled: false
 docuvra:
+  storage:
+    base-path: target/test-storage/uploads
+    converted-path: target/test-storage/converted
   security:
     jwt-secret: test-secret-with-enough-length-for-hmac-signing
     jwt-expiration-minutes: 60

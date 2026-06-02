@@ -42,6 +42,17 @@ dist/
 */.angular/
 coverage/
 */coverage/
+reports/
+test-results/
+*/test-results/
+playwright-report/
+*/playwright-report/
+allure-results/
+*/allure-results/
+allure-report/
+*/allure-report/
+.allure/
+*/.allure/
 
 # Local Docuvra storage and generated data
 .postgres-data/
