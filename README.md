@@ -559,6 +559,10 @@ MIT License
 <img width="1906" height="838" alt="image" src="https://github.com/user-attachments/assets/6ce2f66d-a527-4fe0-a7e7-d9558e989dd6" />
 <img width="1893" height="961" alt="image" src="https://github.com/user-attachments/assets/8d7b5a4b-2931-4668-83c1-bc46a09a99a0" />
 
+## OCR Support - Search Text on image and scan document
+<img width="1898" height="923" alt="image" src="https://github.com/user-attachments/assets/635144b8-4640-4c21-8f4d-9051cc05590f" />
+
+
 # Author
 
 Built with ❤️ as **Docuvra** – a modern document viewing and collaboration platform.
