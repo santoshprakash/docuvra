@@ -47,7 +47,14 @@ public class DocumentConversionService {
         UUID documentId = version.getDocument().getId();
         UUID versionId = version.getId();
         if (convertedFileStorageService.convertedPdfExists(documentId, versionId)) {
-            return convertedFileStorageService.getConvertedPdfPath(documentId, versionId);
+            Path cachedPdf = convertedFileStorageService.getConvertedPdfPath(documentId, versionId);
+            try {
+                validateConvertedPdf(cachedPdf);
+                return cachedPdf;
+            } catch (ConversionException exception) {
+                log.warn("Invalid converted PDF cache found. Regenerating documentId={} versionId={}", documentId, versionId);
+                convertedFileStorageService.deleteConvertedFile(documentId, versionId);
+            }
         }
 
         Path originalFile = fileStorageService.restoreOriginalFileIfMissing(version);

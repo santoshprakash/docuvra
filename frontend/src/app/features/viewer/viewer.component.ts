@@ -1,6 +1,7 @@
 import { Component, ElementRef, HostListener, OnDestroy, OnInit, QueryList, ViewChild, ViewChildren } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { LucideArrowLeft, LucideDownload, LucideMaximize2, LucidePrinter, LucideZoomIn, LucideZoomOut } from '@lucide/angular';
+import { LucideArrowLeft, LucideDownload, LucideMaximize2, LucidePrinter, LucideScanText, LucideZoomIn, LucideZoomOut } from '@lucide/angular';
 import * as pdfjsLib from 'pdfjs-dist';
 import type { PDFDocumentProxy, RenderTask } from 'pdfjs-dist';
 
@@ -11,7 +12,7 @@ import {
   AnnotationType
 } from '../../core/models/annotation.model';
 import { UserResponse } from '../../core/models/auth.model';
-import { DocumentDetailsResponse, DocumentVersionResponse } from '../../core/models/document.model';
+import { DocumentDetailsResponse, DocumentSearchMatchResponse, DocumentVersionResponse, OcrStatusResponse } from '../../core/models/document.model';
 import { AnnotationService } from '../../core/services/annotation.service';
 import { AuthService } from '../../core/services/auth.service';
 import { DocumentService } from '../../core/services/document.service';
@@ -46,6 +47,15 @@ interface PdfPageView {
   rendered: boolean;
 }
 
+interface OcrHighlightBox {
+  pageNumber: number;
+  matchedText: string;
+  xPercent: number;
+  yPercent: number;
+  widthPercent: number;
+  heightPercent: number;
+}
+
 type ResizeHandle = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 
 interface AnnotationInteraction {
@@ -61,6 +71,7 @@ interface AnnotationInteraction {
   selector: 'app-viewer',
   standalone: true,
   imports: [
+    FormsModule,
     RouterLink,
     AnnotationToolbarComponent,
     CommentPanelComponent,
@@ -68,6 +79,7 @@ interface AnnotationInteraction {
     LucideDownload,
     LucideMaximize2,
     LucidePrinter,
+    LucideScanText,
     LucideZoomIn,
     LucideZoomOut
   ],
@@ -102,6 +114,13 @@ export class ViewerComponent implements OnInit, OnDestroy {
   protected drawPreview: AnnotationRequest | null = null;
   protected pages: PdfPageView[] = [];
   protected selectedColor = '#2563EB';
+  protected ocrStatus: OcrStatusResponse | null = null;
+  protected isOcrDialogOpen = false;
+  protected ocrSearchText = '';
+  protected ocrSearchError = '';
+  protected isOcrSearching = false;
+  protected ocrMatches: DocumentSearchMatchResponse[] = [];
+  protected ocrHighlights: OcrHighlightBox[] = [];
 
   protected documentId = '';
   protected versionId = '';
@@ -191,6 +210,87 @@ export class ViewerComponent implements OnInit, OnDestroy {
     } catch {
       // Cross-origin browser PDF viewers may block programmatic print; opening the PDF still supports manual print.
     }
+  }
+
+  protected get ocrButtonLabel(): string {
+    if (!this.ocrStatus) {
+      return 'OCR';
+    }
+    if (this.ocrStatus.ocrCompleted) {
+      return 'OCR Done';
+    }
+    if (this.ocrStatus.ocrForced) {
+      return 'OCR Forced';
+    }
+    if (this.ocrStatus.reason === 'IMAGE_FILE') {
+      return 'OCR Available';
+    }
+    if (this.ocrStatus.ocrRequired) {
+      return 'OCR Recommended';
+    }
+    return 'OCR Optional';
+  }
+
+  protected openOcrDialog(): void {
+    this.isOcrDialogOpen = true;
+    this.ocrSearchError = '';
+  }
+
+  protected closeOcrDialog(): void {
+    if (this.isOcrSearching) {
+      return;
+    }
+
+    this.isOcrDialogOpen = false;
+  }
+
+  protected clearOcrHighlights(): void {
+    this.ocrMatches = [];
+    this.ocrHighlights = [];
+    this.ocrSearchError = '';
+  }
+
+  protected searchOcrText(): void {
+    const query = this.ocrSearchText.trim();
+    if (!query) {
+      this.ocrSearchError = 'Enter text to search.';
+      return;
+    }
+
+    this.isOcrSearching = true;
+    this.ocrSearchError = '';
+    this.documentService.searchOcrText(this.documentId, this.versionId, query).subscribe({
+      next: matches => {
+        this.ocrMatches = matches;
+        this.ocrHighlights = this.ocrHighlightsFromMatches(matches);
+        this.isOcrSearching = false;
+        if (!matches.length) {
+          this.ocrSearchError = 'No matching text found.';
+          return;
+        }
+
+        this.isOcrDialogOpen = false;
+        this.scrollToOcrMatch(matches[0].pageNumber);
+        this.loadOcrStatus();
+      },
+      error: error => {
+        this.isOcrSearching = false;
+        this.ocrSearchError = error?.error?.message ?? 'Unable to scan this document with OCR.';
+      }
+    });
+  }
+
+  protected pageOcrHighlights(pageNumber: number): OcrHighlightBox[] {
+    return this.ocrHighlights.filter(highlight => highlight.pageNumber === pageNumber);
+  }
+
+  protected ocrHighlightStyle(highlight: OcrHighlightBox): Record<string, string> {
+    return {
+      left: `${highlight.xPercent}%`,
+      top: `${highlight.yPercent}%`,
+      width: `${highlight.widthPercent}%`,
+      height: `${highlight.heightPercent}%`
+    };
   }
 
   protected switchVersion(version: DocumentVersionResponse): void {
@@ -570,8 +670,10 @@ export class ViewerComponent implements OnInit, OnDestroy {
           return;
         }
 
-        this.isPdfLoading = true;
+        this.loadOcrStatus();
         this.loadAnnotations();
+
+        this.isPdfLoading = true;
         window.setTimeout(() => void this.loadPdf(), 0);
       },
       error: () => {
@@ -590,6 +692,81 @@ export class ViewerComponent implements OnInit, OnDestroy {
         this.annotationError = 'Unable to load annotations.';
       }
     });
+  }
+
+  private loadOcrStatus(): void {
+    this.ocrStatus = null;
+    this.documentService.getOcrStatus(this.documentId, this.versionId).subscribe({
+      next: status => this.ocrStatus = status,
+      error: () => this.ocrStatus = null
+    });
+  }
+
+  private ocrHighlightsFromMatches(matches: DocumentSearchMatchResponse[]): OcrHighlightBox[] {
+    return matches.flatMap(match => {
+      const boxes = match.boxes.flatMap(box => this.parseOcrBox(match, box));
+      if (boxes.length) {
+        return boxes;
+      }
+
+      return [{
+        pageNumber: match.pageNumber,
+        matchedText: match.matchedText,
+        xPercent: 5,
+        yPercent: 5,
+        widthPercent: 90,
+        heightPercent: 90
+      }];
+    });
+  }
+
+  private parseOcrBox(match: DocumentSearchMatchResponse, rawBox: string): OcrHighlightBox[] {
+    try {
+      const parsed = JSON.parse(rawBox) as unknown;
+      if (Array.isArray(parsed)) {
+        return parsed.flatMap(item => this.ocrBoxFromParsed(match, item));
+      }
+      return this.ocrBoxFromParsed(match, parsed);
+    } catch {
+      return [];
+    }
+  }
+
+  private ocrBoxFromParsed(match: DocumentSearchMatchResponse, parsed: unknown): OcrHighlightBox[] {
+    if (!parsed || typeof parsed !== 'object') {
+      return [];
+    }
+
+    const box = parsed as Record<string, unknown>;
+    const xPercent = this.numberFromUnknown(box['xPercent']);
+    const yPercent = this.numberFromUnknown(box['yPercent']);
+    const widthPercent = this.numberFromUnknown(box['widthPercent']);
+    const heightPercent = this.numberFromUnknown(box['heightPercent']);
+    if (xPercent === null || yPercent === null || widthPercent === null || heightPercent === null) {
+      return [];
+    }
+
+    return [{
+      pageNumber: match.pageNumber,
+      matchedText: String(box['text'] ?? match.matchedText),
+      xPercent,
+      yPercent,
+      widthPercent: Math.max(widthPercent, 1.2),
+      heightPercent: Math.max(heightPercent, 1.2)
+    }];
+  }
+
+  private numberFromUnknown(value: unknown): number | null {
+    const numeric = typeof value === 'number' ? value : Number(value);
+    return Number.isFinite(numeric) ? numeric : null;
+  }
+
+  private scrollToOcrMatch(pageNumber: number): void {
+    this.currentPage = pageNumber;
+    window.setTimeout(() => document.getElementById(`pdf-page-${pageNumber}`)?.scrollIntoView({
+      block: 'center',
+      behavior: 'smooth'
+    }), 0);
   }
 
   private async loadPdf(): Promise<void> {

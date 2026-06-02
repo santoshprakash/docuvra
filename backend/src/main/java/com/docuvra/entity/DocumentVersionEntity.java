@@ -74,4 +74,8 @@ public class DocumentVersionEntity {
 
     @Column(name = "uploaded_at", nullable = false)
     private LocalDateTime uploadedAt;
+
+    @Column(name = "ocr_forced", nullable = false)
+    @Builder.Default
+    private boolean ocrForced = false;
 }

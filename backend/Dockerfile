@@ -10,7 +10,7 @@ RUN mvn clean package -DskipTests
 
 FROM eclipse-temurin:21-jre-alpine
 
-RUN apk add --no-cache curl libreoffice imagemagick font-dejavu font-liberation
+RUN apk add --no-cache curl libreoffice imagemagick tesseract-ocr tesseract-ocr-data-eng font-dejavu font-liberation
 
 WORKDIR /app
 

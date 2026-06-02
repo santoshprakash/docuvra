@@ -7,12 +7,14 @@ import com.docuvra.dto.DocumentAssignmentResponse;
 import com.docuvra.dto.DocumentDetailsResponse;
 import com.docuvra.dto.DocumentListResponse;
 import com.docuvra.dto.DocumentUploadResponse;
+import com.docuvra.dto.OcrStatusResponse;
 import com.docuvra.dto.ThumbnailResult;
 import com.docuvra.dto.UploadNewVersionResponse;
 import com.docuvra.entity.DocumentVersionEntity;
 import com.docuvra.service.DocumentService;
 import com.docuvra.service.DocumentAssignmentService;
 import com.docuvra.service.AssignmentRequestService;
+import com.docuvra.service.OcrEligibilityService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -49,6 +51,7 @@ public class DocumentController {
     private final DocumentService documentService;
     private final DocumentAssignmentService documentAssignmentService;
     private final AssignmentRequestService assignmentRequestService;
+    private final OcrEligibilityService ocrEligibilityService;
 
     @Operation(summary = "Upload a fresh document")
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -167,6 +170,24 @@ public class DocumentController {
                 .body(body);
     }
 
+    @Operation(summary = "Stream the original document version inline")
+    @GetMapping("/{documentId}/versions/{versionId}/original/view")
+    public ResponseEntity<StreamingResponseBody> viewOriginalVersion(
+            @PathVariable UUID documentId,
+            @PathVariable UUID versionId
+    ) {
+        DocumentVersionEntity version = documentService.getVersion(documentId, versionId);
+        StreamingResponseBody body = outputStream -> {
+            try (InputStream inputStream = documentService.getFileStream(documentId, versionId)) {
+                inputStream.transferTo(outputStream);
+            }
+        };
+
+        return ResponseEntity.ok()
+                .headers(fileHeaders(version, ContentDisposition.inline()))
+                .body(body);
+    }
+
     @Operation(summary = "Get a document version thumbnail")
     @GetMapping("/{documentId}/versions/{versionId}/thumbnail")
     public ResponseEntity<byte[]> getVersionThumbnail(
@@ -187,6 +208,24 @@ public class DocumentController {
             @PathVariable UUID versionId
     ) {
         return documentService.getConvertedStatus(documentId, versionId);
+    }
+
+    @Operation(summary = "Get OCR eligibility and completion status")
+    @GetMapping("/{documentId}/versions/{versionId}/ocr/status")
+    public OcrStatusResponse getOcrStatus(
+            @PathVariable UUID documentId,
+            @PathVariable UUID versionId
+    ) {
+        return ocrEligibilityService.getStatus(documentId, versionId);
+    }
+
+    @Operation(summary = "Force OCR eligibility for a document version")
+    @PostMapping("/{documentId}/versions/{versionId}/ocr/force")
+    public OcrStatusResponse forceOcr(
+            @PathVariable UUID documentId,
+            @PathVariable UUID versionId
+    ) {
+        return ocrEligibilityService.forceOcr(documentId, versionId);
     }
 
     @Operation(summary = "Delete converted PDF cache for one version")

@@ -61,4 +61,30 @@ export interface DocumentVersionResponse {
   thumbnailUrl: string;
   uploadedAt: string;
 }
+
+export type OcrReason =
+  | 'IMAGE_FILE'
+  | 'SCANNED_PDF'
+  | 'PDF_WITH_TEXT_LAYER'
+  | 'OFFICE_DOCUMENT'
+  | 'EXCEL_DOCUMENT'
+  | 'USER_FORCED'
+  | 'OCR_NOT_REQUIRED';
+
+export interface OcrStatusResponse {
+  ocrAvailable: boolean;
+  ocrRequired: boolean;
+  ocrCompleted: boolean;
+  ocrEligible: boolean;
+  ocrForced: boolean;
+  originalFileType: string;
+  originalMimeType: string;
+  reason: OcrReason;
+}
+
+export interface DocumentSearchMatchResponse {
+  pageNumber: number;
+  matchedText: string;
+  boxes: string[];
+}
 import { UserRole } from './auth.model';

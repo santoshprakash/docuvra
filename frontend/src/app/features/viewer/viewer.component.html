@@ -12,6 +12,20 @@
       </div>
       <div class="viewer-toolbar-actions">
         <span class="page-count">Page {{ currentPage }} / {{ totalPages || '-' }}</span>
+        @if (ocrStatus?.ocrAvailable) {
+          <button
+            class="ocr-status-button"
+            type="button"
+            [class.required]="ocrStatus?.ocrRequired"
+            [class.completed]="ocrStatus?.ocrCompleted"
+            [title]="'Original: ' + (ocrStatus?.originalFileType || '-') + ' · ' + (ocrStatus?.reason || '-')"
+            aria-label="Open OCR search"
+            (click)="openOcrDialog()"
+          >
+            <svg lucideScanText size="17" aria-hidden="true"></svg>
+            <span>{{ ocrButtonLabel }}</span>
+          </button>
+        }
         <div class="viewer-action-group" aria-label="Document view controls">
           <button class="viewer-icon-btn" type="button" [disabled]="zoom <= minZoom || isPdfLoading" title="Zoom out" aria-label="Zoom out" (click)="zoomOut()">
             <svg lucideZoomOut size="18" aria-hidden="true"></svg>
@@ -39,7 +53,10 @@
     <div class="annotation-alert">{{ annotationError }}</div>
   }
 
-  <div class="viewer-workspace" [class.pdf-ready]="selectedVersion && !isLoading && !errorMessage">
+  <div
+    class="viewer-workspace"
+    [class.pdf-ready]="selectedVersion && !isLoading && !errorMessage"
+  >
     @if (selectedVersion && !isLoading && !errorMessage && canAnnotate) {
       <div class="annotation-toolbar-wrap">
         <app-annotation-toolbar
@@ -152,6 +169,14 @@
                     }
                   </div>
                 }
+
+                @for (highlight of pageOcrHighlights(page.pageNumber); track highlight.pageNumber + '-' + highlight.xPercent + '-' + highlight.yPercent + '-' + highlight.matchedText) {
+                  <div
+                    class="ocr-highlight"
+                    [style]="ocrHighlightStyle(highlight)"
+                    [title]="highlight.matchedText"
+                  ></div>
+                }
               </div>
               @if (!page.rendered) {
                 <div class="page-loading">Loading page {{ page.pageNumber }}</div>
@@ -222,6 +247,42 @@
             {{ isSavingAnnotation ? 'Saving' : 'Save Annotation' }}
           </button>
         </div>
+      </section>
+    </div>
+  }
+
+  @if (isOcrDialogOpen) {
+    <div class="comment-dialog-backdrop">
+      <section class="ocr-dialog" aria-labelledby="ocr-dialog-title">
+        <div class="ocr-dialog-header">
+          <div>
+            <h2 id="ocr-dialog-title">OCR search</h2>
+            <p>Search scanned text in this document.</p>
+          </div>
+          <button class="viewer-icon-btn" type="button" title="Close" aria-label="Close OCR search" [disabled]="isOcrSearching" (click)="closeOcrDialog()">x</button>
+        </div>
+        <form class="ocr-search-form" (submit)="$event.preventDefault(); searchOcrText()">
+          <input
+            type="text"
+            name="ocrSearchText"
+            placeholder="Enter text to find"
+            [(ngModel)]="ocrSearchText"
+            [disabled]="isOcrSearching"
+          />
+          <button class="btn btn-primary" type="submit" [disabled]="isOcrSearching">
+            {{ isOcrSearching ? 'Scanning' : 'Search' }}
+          </button>
+        </form>
+        @if (ocrSearchError) {
+          <div class="annotation-alert inline">{{ ocrSearchError }}</div>
+        }
+        @if (ocrMatches.length) {
+          <div class="ocr-result-summary">
+            <strong>{{ ocrHighlights.length || ocrMatches.length }}</strong>
+            <span>highlight{{ (ocrHighlights.length || ocrMatches.length) === 1 ? '' : 's' }} found</span>
+            <button class="btn btn-secondary" type="button" (click)="clearOcrHighlights()">Clear</button>
+          </div>
+        }
       </section>
     </div>
   }

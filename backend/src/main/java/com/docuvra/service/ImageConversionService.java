@@ -6,8 +6,16 @@ import com.docuvra.exception.ConversionException;
 import com.docuvra.exception.ConverterNotInstalledException;
 import com.docuvra.util.CommandExecutor;
 import lombok.RequiredArgsConstructor;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.graphics.image.LosslessFactory;
+import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import org.springframework.stereotype.Service;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -37,6 +45,37 @@ public class ImageConversionService {
     }
 
     public Path convertImageToPdf(Path inputFile, Path outputPdf) {
+        try {
+            return convertImageToPdfWithPdfBox(inputFile, outputPdf);
+        } catch (Exception exception) {
+            return convertImageToPdfWithImageMagick(inputFile, outputPdf);
+        }
+    }
+
+    private Path convertImageToPdfWithPdfBox(Path inputFile, Path outputPdf) throws Exception {
+        Files.createDirectories(outputPdf.getParent());
+        Files.deleteIfExists(outputPdf);
+        BufferedImage image = ImageIO.read(inputFile.toFile());
+        if (image == null) {
+            throw new IllegalArgumentException("ImageIO could not read this image format.");
+        }
+
+        float width = Math.max(1, image.getWidth());
+        float height = Math.max(1, image.getHeight());
+        try (PDDocument document = new PDDocument()) {
+            PDPage page = new PDPage(new PDRectangle(width, height));
+            document.addPage(page);
+            PDImageXObject pdfImage = LosslessFactory.createFromImage(document, image);
+            try (PDPageContentStream contentStream = new PDPageContentStream(document, page)) {
+                contentStream.drawImage(pdfImage, 0, 0, width, height);
+            }
+            document.save(outputPdf.toFile());
+        }
+
+        return outputPdf;
+    }
+
+    private Path convertImageToPdfWithImageMagick(Path inputFile, Path outputPdf) {
         String executable = detectImageMagickExecutable();
         try {
             Files.createDirectories(outputPdf.getParent());
@@ -46,7 +85,7 @@ public class ImageConversionService {
         }
 
         CommandResult result = commandExecutor.execute(
-                List.of(executable, inputFile.toString(), "-auto-orient", outputPdf.toString()),
+                List.of(executable, inputFile.toString(), "-auto-orient", "pdf:" + outputPdf),
                 timeout()
         );
         if (!result.success()) {
