@@ -62,6 +62,13 @@ header {
   text-align: left;
   width: 100%;
 
+  .comment-author {
+    color: var(--color-text-primary);
+    display: block;
+    font-size: 13px;
+    margin-bottom: 3px;
+  }
+
   span {
     color: var(--color-primary);
     display: block;
@@ -99,6 +106,59 @@ header {
   font-size: 12px;
   font-weight: 800;
   padding: 2px 0;
+}
+
+.reply-box {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.reply-box textarea {
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  font: inherit;
+  padding: 8px;
+  resize: vertical;
+  width: 100%;
+}
+
+.reply-mentions {
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  display: grid;
+  overflow: hidden;
+}
+
+.reply-mentions button {
+  background: #ffffff;
+  border: 0;
+  border-bottom: 1px solid var(--color-border);
+  cursor: pointer;
+  display: grid;
+  padding: 8px;
+  text-align: left;
+}
+
+.reply-mentions button:last-child {
+  border-bottom: 0;
+}
+
+.reply-mentions span {
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  margin: 2px 0 0;
+}
+
+.reply-submit {
+  background: var(--color-primary);
+  border: 0;
+  border-radius: 8px;
+  color: #ffffff;
+  cursor: pointer;
+  font-weight: 800;
+  justify-self: end;
+  padding: 7px 10px;
 }
 
 .comment-card.selected {

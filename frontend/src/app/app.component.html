@@ -5,7 +5,47 @@
   </a>
   <nav class="app-nav" aria-label="Primary navigation">
     <a routerLink="/documents">Documents</a>
+    @if (currentUser()?.role === 'SUPERVISOR') {
+      <a routerLink="/users">Users</a>
+      <a routerLink="/assignment-requests">Requests</a>
+    }
+    @if (currentUser()) {
+      <a routerLink="/change-password">Password</a>
+    }
   </nav>
+  <div class="account-actions">
+    @if (currentUser(); as user) {
+      <div class="notification-wrap">
+        <button class="notification-button" type="button" aria-label="Notifications" (click)="toggleNotifications()">
+          Bell
+          @if (unreadCount() > 0) {
+            <span>{{ unreadCount() }}</span>
+          }
+        </button>
+        @if (isNotificationsOpen) {
+          <div class="notification-menu">
+            <div class="notification-menu-header">
+              <strong>Notifications</strong>
+              <button type="button" (click)="markAllRead()">Read all</button>
+            </div>
+            @for (notification of notifications; track notification.notificationId) {
+              <div class="notification-item" [class.unread]="!notification.read">
+                <strong>{{ notification.title }}</strong>
+                <p>{{ notification.message }}</p>
+                <time>{{ notification.createdAt | date: 'medium' }}</time>
+              </div>
+            } @empty {
+              <p class="notification-empty">No notifications.</p>
+            }
+          </div>
+        }
+      </div>
+      <span>{{ user.username }}</span>
+      <button type="button" (click)="logout()">Sign out</button>
+    } @else {
+      <a routerLink="/login">Sign in</a>
+    }
+  </div>
 </header>
 
 <main>

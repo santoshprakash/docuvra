@@ -20,11 +20,14 @@
             (click)="annotationSelected.emit(annotation)"
             (keydown.enter)="annotationSelected.emit(annotation)"
           >
-            <span>{{ annotation.annotationType }}</span>
-            <p>{{ commentText(annotation) }}</p>
+            <strong class="comment-author">{{ authorName(annotation) }}</strong>
+            <span>{{ annotationMeta(annotation) }}</span>
+            @for (comment of annotation.comments; track comment.commentId) {
+              <p>{{ comment.commentText }}</p>
+            }
             <div class="comment-meta">
               <time>{{ annotation.createdAt | date: 'medium' }}</time>
-              @if (annotation.comments.length) {
+              @if (annotation.comments.length && canDelete) {
                 <button
                   class="comment-delete"
                   type="button"
@@ -36,6 +39,28 @@
                 </button>
               }
             </div>
+            @if (canReply) {
+              <div class="reply-box" (click)="$event.stopPropagation()">
+                <textarea
+                  #replyBox
+                  rows="2"
+                  placeholder="Reply"
+                  [value]="replyTextByAnnotationId[annotation.annotationId] || ''"
+                  (input)="onReplyInput(annotation.annotationId, replyBox.value, replyBox.selectionStart)"
+                ></textarea>
+                @if (suggestionsByAnnotationId[annotation.annotationId]?.length) {
+                  <div class="reply-mentions">
+                    @for (user of suggestionsByAnnotationId[annotation.annotationId]; track user.userId) {
+                      <button type="button" (click)="insertMention(annotation.annotationId, user)">
+                        <strong>{{ user.username }}</strong>
+                        <span>{{ user.email }}</span>
+                      </button>
+                    }
+                  </div>
+                }
+                <button class="reply-submit" type="button" (click)="submitReply(annotation.annotationId)">Reply</button>
+              </div>
+            }
           </div>
         }
       </section>

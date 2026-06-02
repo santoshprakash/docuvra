@@ -49,9 +49,10 @@ export class AnnotationService {
     return this.http.delete<void>(`${this.baseUrl}/annotations/comments/${commentId}`);
   }
 
-  createComment(annotationId: string, commentText: string): Observable<AnnotationCommentResponse> {
+  createComment(annotationId: string, commentText: string, mentionedUserIds: string[] = []): Observable<AnnotationCommentResponse> {
     return this.http.post<AnnotationCommentResponse>(`${this.baseUrl}/annotations/${annotationId}/comments`, {
-      commentText
+      commentText,
+      mentionedUserIds
     });
   }
 

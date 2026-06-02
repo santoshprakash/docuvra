@@ -6,10 +6,16 @@ import com.docuvra.dto.AnnotationRequest;
 import com.docuvra.dto.AnnotationResponse;
 import com.docuvra.entity.AnnotationCommentEntity;
 import com.docuvra.entity.AnnotationEntity;
+import com.docuvra.entity.CommentMentionEntity;
 import com.docuvra.entity.DocumentVersionEntity;
+import com.docuvra.entity.UserEntity;
 import com.docuvra.exception.AnnotationNotFoundException;
+import com.docuvra.exception.ForbiddenException;
+import com.docuvra.enums.NotificationType;
 import com.docuvra.repository.AnnotationCommentRepository;
 import com.docuvra.repository.AnnotationRepository;
+import com.docuvra.repository.CommentMentionRepository;
+import com.docuvra.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,11 +30,20 @@ public class AnnotationService {
 
     private final AnnotationRepository annotationRepository;
     private final AnnotationCommentRepository annotationCommentRepository;
+    private final CommentMentionRepository commentMentionRepository;
+    private final UserRepository userRepository;
     private final DocumentService documentService;
+    private final CurrentUserService currentUserService;
+    private final DocumentAccessService documentAccessService;
+    private final NotificationService notificationService;
 
     @Transactional
     public AnnotationResponse createAnnotation(UUID documentId, UUID versionId, AnnotationRequest request) {
         DocumentVersionEntity version = documentService.getVersion(documentId, versionId);
+        UserEntity user = currentUserService.currentUserEntity();
+        if (!documentAccessService.canCreateAnnotation(user)) {
+            throw new ForbiddenException("Normal users cannot create annotations or root comments.");
+        }
         LocalDateTime now = LocalDateTime.now();
 
         AnnotationEntity annotation = AnnotationEntity.builder()
@@ -51,28 +66,39 @@ public class AnnotationService {
                 .strokeWidth(request.strokeWidth() == null ? 2.0 : request.strokeWidth())
                 .selectedText(request.selectedText())
                 .drawingData(request.drawingData())
+                .createdByUserId(user.getId())
+                .createdByName(user.getUsername())
                 .createdAt(now)
                 .updatedAt(now)
                 .build();
 
         if (request.commentText() != null && !request.commentText().isBlank()) {
-            annotation.getComments().add(AnnotationCommentEntity.builder()
+            AnnotationCommentEntity comment = AnnotationCommentEntity.builder()
                     .id(UUID.randomUUID())
                     .annotation(annotation)
                     .commentText(request.commentText().trim())
+                    .createdByUserId(user.getId())
+                    .createdByName(user.getUsername())
                     .createdAt(now)
                     .updatedAt(now)
-                    .build());
+                    .build();
+            annotation.getComments().add(comment);
         }
 
-        return toResponse(annotationRepository.save(annotation));
+        AnnotationEntity saved = annotationRepository.save(annotation);
+        if (request.mentionedUserIds() != null && !request.mentionedUserIds().isEmpty()) {
+            saved.getComments().stream().findFirst().ifPresent(comment -> saveMentions(comment, request.mentionedUserIds(), now));
+        }
+        return toResponse(saved);
     }
 
     @Transactional(readOnly = true)
     public List<AnnotationResponse> listAnnotations(UUID documentId, UUID versionId) {
         documentService.getVersion(documentId, versionId);
+        UserEntity user = currentUserService.currentUserEntity();
         return annotationRepository.findByDocumentIdAndVersionIdOrderByPageNumberAscCreatedAtAsc(documentId, versionId)
                 .stream()
+                .filter(annotation -> canViewAnnotation(user, annotation))
                 .map(this::toResponse)
                 .toList();
     }
@@ -80,8 +106,10 @@ public class AnnotationService {
     @Transactional(readOnly = true)
     public List<AnnotationResponse> listPageAnnotations(UUID documentId, UUID versionId, Integer pageNumber) {
         documentService.getVersion(documentId, versionId);
+        UserEntity user = currentUserService.currentUserEntity();
         return annotationRepository.findByDocumentIdAndVersionIdAndPageNumberOrderByCreatedAtAsc(documentId, versionId, pageNumber)
                 .stream()
+                .filter(annotation -> canViewAnnotation(user, annotation))
                 .map(this::toResponse)
                 .toList();
     }
@@ -89,6 +117,9 @@ public class AnnotationService {
     @Transactional
     public AnnotationResponse updateAnnotation(UUID annotationId, AnnotationRequest request) {
         AnnotationEntity annotation = getAnnotation(annotationId);
+        if (!documentAccessService.canCreateAnnotation(currentUserService.currentUserEntity())) {
+            throw new ForbiddenException("Normal users cannot edit annotations.");
+        }
         annotation.setPageNumber(request.pageNumber());
         annotation.setAnnotationType(request.annotationType());
         annotation.setXPercent(request.xPercent());
@@ -112,6 +143,9 @@ public class AnnotationService {
     @Transactional
     public void deleteAnnotation(UUID annotationId) {
         AnnotationEntity annotation = getAnnotation(annotationId);
+        if (!documentAccessService.canDeleteAnnotation(currentUserService.currentUserEntity())) {
+            throw new ForbiddenException("You do not have permission to delete comments or annotations.");
+        }
         annotationRepository.delete(annotation);
     }
 
@@ -119,21 +153,32 @@ public class AnnotationService {
     public void deleteCommentAndLinkedAnnotation(UUID commentId) {
         AnnotationCommentEntity comment = annotationCommentRepository.findById(commentId)
                 .orElseThrow(() -> new AnnotationNotFoundException(commentId));
+        if (!documentAccessService.canDeleteComment(currentUserService.currentUserEntity())) {
+            throw new ForbiddenException("You do not have permission to delete comments or annotations.");
+        }
         annotationRepository.delete(comment.getAnnotation());
     }
 
     @Transactional
     public AnnotationCommentResponse createComment(UUID annotationId, AnnotationCommentRequest request) {
         AnnotationEntity annotation = getAnnotation(annotationId);
+        UserEntity user = currentUserService.currentUserEntity();
+        if (!documentAccessService.canCreateRootComment(user) && !canNormalUserReply(user, annotation)) {
+            throw new ForbiddenException("Normal users can reply only to mentioned comment threads.");
+        }
         LocalDateTime now = LocalDateTime.now();
         AnnotationCommentEntity comment = AnnotationCommentEntity.builder()
                 .id(UUID.randomUUID())
                 .annotation(annotation)
                 .commentText(request.commentText().trim())
+                .createdByUserId(user.getId())
+                .createdByName(user.getUsername())
                 .createdAt(now)
                 .updatedAt(now)
                 .build();
-        return toCommentResponse(annotationCommentRepository.save(comment));
+        AnnotationCommentEntity saved = annotationCommentRepository.save(comment);
+        saveMentions(saved, request.mentionedUserIds(), now);
+        return toCommentResponse(saved);
     }
 
     @Transactional(readOnly = true)
@@ -143,6 +188,7 @@ public class AnnotationService {
         }
         return annotationCommentRepository.findByAnnotationIdOrderByCreatedAtAsc(annotationId)
                 .stream()
+                .filter(comment -> canViewComment(currentUserService.currentUserEntity(), comment))
                 .map(this::toCommentResponse)
                 .toList();
     }
@@ -153,6 +199,7 @@ public class AnnotationService {
     }
 
     private AnnotationResponse toResponse(AnnotationEntity annotation) {
+        UserEntity user = currentUserService.currentUserEntity();
         return new AnnotationResponse(
                 annotation.getId(),
                 annotation.getDocument().getId(),
@@ -173,9 +220,14 @@ public class AnnotationService {
                 annotation.getStrokeWidth(),
                 annotation.getSelectedText(),
                 annotation.getDrawingData(),
+                annotation.getCreatedByUserId(),
+                defaultString(annotation.getCreatedByName(), "Staff"),
                 annotation.getCreatedAt(),
                 annotation.getUpdatedAt(),
-                annotation.getComments().stream().map(this::toCommentResponse).toList()
+                annotation.getComments().stream()
+                        .filter(comment -> canViewComment(user, comment))
+                        .map(this::toCommentResponse)
+                        .toList()
         );
     }
 
@@ -184,6 +236,8 @@ public class AnnotationService {
                 comment.getId(),
                 comment.getAnnotation().getId(),
                 comment.getCommentText(),
+                comment.getCreatedByUserId(),
+                defaultString(comment.getCreatedByName(), "Staff"),
                 comment.getCreatedAt(),
                 comment.getUpdatedAt()
         );
@@ -191,5 +245,57 @@ public class AnnotationService {
 
     private String defaultString(String value, String fallback) {
         return value == null || value.isBlank() ? fallback : value;
+    }
+
+    private void saveMentions(AnnotationCommentEntity comment, List<UUID> mentionedUserIds, LocalDateTime now) {
+        if (mentionedUserIds == null || mentionedUserIds.isEmpty()) {
+            return;
+        }
+
+        mentionedUserIds.stream()
+                .distinct()
+                .map(userRepository::findById)
+                .flatMap(java.util.Optional::stream)
+                .filter(UserEntity::isActive)
+                .forEach(user -> {
+                    CommentMentionEntity mention = new CommentMentionEntity();
+                    mention.setId(UUID.randomUUID());
+                    mention.setComment(comment);
+                    mention.setMentionedUser(user);
+                    mention.setCreatedAt(now);
+                    commentMentionRepository.save(mention);
+                    notificationService.notifyUser(
+                            user.getId(),
+                            NotificationType.COMMENT_MENTION,
+                            "You were mentioned in a comment",
+                            currentUserService.currentUsername() + " mentioned you.",
+                            comment.getAnnotation().getDocument().getId(),
+                            comment.getAnnotation().getVersion().getId(),
+                            comment.getAnnotation().getId(),
+                            comment.getId()
+                    );
+                });
+    }
+
+    private boolean canViewAnnotation(UserEntity user, AnnotationEntity annotation) {
+        if (user.getRole() != com.docuvra.enums.UserRole.NORMAL_USER) {
+            return true;
+        }
+        return annotation.getComments().stream().anyMatch(comment -> canViewComment(user, comment));
+    }
+
+    private boolean canViewComment(UserEntity user, AnnotationCommentEntity comment) {
+        if (user.getRole() != com.docuvra.enums.UserRole.NORMAL_USER) {
+            return true;
+        }
+        return comment.getCreatedByUserId() != null && comment.getCreatedByUserId().equals(user.getId())
+                || commentMentionRepository.existsByCommentIdAndMentionedUserId(comment.getId(), user.getId());
+    }
+
+    private boolean canNormalUserReply(UserEntity user, AnnotationEntity annotation) {
+        if (user.getRole() != com.docuvra.enums.UserRole.NORMAL_USER) {
+            return true;
+        }
+        return annotation.getComments().stream().anyMatch(comment -> canViewComment(user, comment));
     }
 }

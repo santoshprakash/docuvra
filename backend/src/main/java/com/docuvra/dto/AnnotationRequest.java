@@ -4,6 +4,9 @@ import com.docuvra.enums.AnnotationType;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 
+import java.util.List;
+import java.util.UUID;
+
 public record AnnotationRequest(
         @NotNull @Min(1) Integer pageNumber,
         @NotNull AnnotationType annotationType,
@@ -21,6 +24,7 @@ public record AnnotationRequest(
         Double strokeWidth,
         String selectedText,
         String drawingData,
-        String commentText
+        String commentText,
+        List<UUID> mentionedUserIds
 ) {
 }

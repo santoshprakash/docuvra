@@ -26,6 +26,8 @@ public record AnnotationResponse(
         Double strokeWidth,
         String selectedText,
         String drawingData,
+        UUID createdByUserId,
+        String createdByName,
         LocalDateTime createdAt,
         LocalDateTime updatedAt,
         List<AnnotationCommentResponse> comments

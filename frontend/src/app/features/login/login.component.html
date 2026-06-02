@@ -1,0 +1,55 @@
+<section class="auth-shell">
+  <form class="auth-panel" (ngSubmit)="submit()">
+    <div class="auth-heading">
+      <p>Docuvra</p>
+      <h1>{{ mode === 'login' ? 'Sign in' : 'Create normal user account' }}</h1>
+    </div>
+
+    <div class="mode-switch" role="tablist" aria-label="Authentication mode">
+      <button type="button" [class.active]="mode === 'login'" (click)="switchMode('login')">Sign in</button>
+      <button type="button" [class.active]="mode === 'signup'" (click)="switchMode('signup')">Sign up</button>
+    </div>
+
+    @if (mode === 'login') {
+      <label>
+        Username or email
+        <input name="usernameOrEmail" [(ngModel)]="usernameOrEmail" autocomplete="username" required />
+      </label>
+    } @else {
+      <label>
+        Username
+        <input name="username" [(ngModel)]="username" autocomplete="username" required maxlength="100" />
+      </label>
+      <label>
+        Email
+        <input name="email" type="email" [(ngModel)]="email" autocomplete="email" required maxlength="255" />
+      </label>
+      <label>
+        Mobile
+        <input name="mobile" [(ngModel)]="mobile" autocomplete="tel" required maxlength="30" />
+      </label>
+    }
+
+    <label>
+      Password
+      <input name="password" type="password" [(ngModel)]="password" autocomplete="current-password" required minlength="8" />
+    </label>
+
+    @if (mode === 'signup') {
+      <label>
+        Confirm password
+        <input name="confirmPassword" type="password" [(ngModel)]="confirmPassword" autocomplete="new-password" required minlength="8" />
+      </label>
+    }
+
+    @if (errorMessage) {
+      <p class="error-message">{{ errorMessage }}</p>
+    }
+
+    <button class="primary-action" type="submit" [disabled]="isSubmitting">
+      {{ isSubmitting ? 'Please wait...' : mode === 'login' ? 'Sign in' : 'Create account' }}
+    </button>
+
+    <a routerLink="/documents">Back to documents</a>
+  </form>
+</section>

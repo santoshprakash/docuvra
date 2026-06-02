@@ -151,6 +151,40 @@ npm start
 - PostgreSQL username: `docuvra`
 - PostgreSQL password: `docuvra`
 
+## Default App Users
+
+Flyway seeds these users for the login/RBAC workflow:
+
+| Role | Email / Username | Password |
+| --- | --- | --- |
+| Normal User | `normal@docuvra.local` | `password` |
+| Staff | `staff@docuvra.local` | `password` |
+| Supervisor | `supervisor@docuvra.local` | `password` |
+
+Security configuration:
+
+```text
+DOCUVRA_LOGIN_ENABLED=true
+DOCUVRA_DEFAULT_ROLE_WHEN_LOGIN_DISABLED=STAFF
+DOCUVRA_DEFAULT_USERNAME_WHEN_LOGIN_DISABLED=Staff
+DOCUVRA_JWT_SECRET=change-this-local-dev-secret-please
+DOCUVRA_JWT_EXPIRATION_MINUTES=720
+```
+
+User rules:
+
+- Normal users can sign up from the login page.
+- Signup captures username, email, mobile, and password.
+- Supervisors can open `Users` and create Staff or Supervisor accounts.
+- Supervisors can assign documents to staff users from document details.
+- Staff accounts created by a supervisor must change password on first login.
+- Normal users and staff users can change their own password from the header.
+- Normal users see only documents they uploaded.
+- Staff users see only documents assigned to them.
+- Supervisors see all documents.
+- Username is globally unique.
+- Email and mobile are unique per role, so the same email/mobile can exist once as Staff and once as Normal User with different usernames.
+
 ## Windows File Storage
 
 Default local storage path:
@@ -302,7 +336,7 @@ DOCUVRA_EXCEL_MAX_COLUMNS=100
 Current limitations:
 
 - Excel editing is not supported.
-- Excel compare is not supported in the current MVP.
+- Excel compare is read-only.
 - Cell range selection is minimal; comments are added from the selected cell in the UI.
 
 Configuration:

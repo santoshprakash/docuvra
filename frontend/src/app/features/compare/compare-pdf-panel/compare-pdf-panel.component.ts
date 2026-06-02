@@ -434,7 +434,10 @@ export class ComparePdfPanelComponent implements OnChanges, OnDestroy {
       throw new Error('Select a document and version.');
     }
 
-    const response = await fetch(this.documentService.getViewUrl(this.documentId, this.version.versionId));
+    const response = await fetch(
+      this.documentService.getViewUrl(this.documentId, this.version.versionId),
+      this.documentService.getAuthenticatedFetchOptions()
+    );
     if (response.ok) {
       return new Uint8Array(await response.arrayBuffer());
     }

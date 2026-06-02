@@ -34,6 +34,12 @@ public class DocumentEntity {
     @Column(name = "title", nullable = false, length = 255)
     private String title;
 
+    @Column(name = "uploaded_by_user_id")
+    private UUID uploadedByUserId;
+
+    @Column(name = "uploaded_by_name", nullable = false, length = 100)
+    private String uploadedByName;
+
     @Column(name = "latest_version_number", nullable = false)
     private Integer latestVersionNumber;
 
@@ -47,4 +53,3 @@ public class DocumentEntity {
     @OneToMany(mappedBy = "document", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<DocumentVersionEntity> versions = new ArrayList<>();
 }
-

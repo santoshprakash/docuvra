@@ -1,0 +1,76 @@
+<section class="users-page">
+  <header class="page-heading">
+    <div>
+      <p>Supervisor tools</p>
+      <h1>User management</h1>
+    </div>
+  </header>
+
+  <form class="create-panel" (ngSubmit)="createUser()">
+    <label>
+      Role
+      <select name="role" [(ngModel)]="role" required>
+        <option value="STAFF">Staff</option>
+        <option value="SUPERVISOR">Supervisor</option>
+      </select>
+    </label>
+
+    <label>
+      Username
+      <input name="username" [(ngModel)]="username" required maxlength="100" />
+    </label>
+
+    <label>
+      Email
+      <input name="email" type="email" [(ngModel)]="email" required maxlength="255" />
+    </label>
+
+    <label>
+      Mobile
+      <input name="mobile" [(ngModel)]="mobile" required maxlength="30" />
+    </label>
+
+    <label>
+      Temporary password
+      <input name="temporaryPassword" type="password" [(ngModel)]="temporaryPassword" required minlength="8" />
+    </label>
+
+    <button type="submit" [disabled]="isCreating">{{ isCreating ? 'Creating...' : 'Add user' }}</button>
+  </form>
+
+  @if (errorMessage) {
+    <p class="message error">{{ errorMessage }}</p>
+  }
+  @if (successMessage) {
+    <p class="message success">{{ successMessage }}</p>
+  }
+
+  <div class="users-table">
+    <div class="table-header">
+      <span>User</span>
+      <span>Role</span>
+      <span>Mobile</span>
+      <span>Status</span>
+      <span>Created</span>
+    </div>
+
+    @if (isLoading) {
+      <p class="empty-state">Loading users...</p>
+    } @else {
+      @for (user of users; track user.userId) {
+        <div class="table-row">
+          <span>
+            <strong>{{ user.username }}</strong>
+            <small>{{ user.email }}</small>
+          </span>
+          <span>{{ roleLabel(user.role) }}</span>
+          <span>{{ user.mobile }}</span>
+          <span>{{ user.forcePasswordChange ? 'Password change required' : user.active ? 'Active' : 'Inactive' }}</span>
+          <span>{{ user.createdAt | date:'mediumDate' }}</span>
+        </div>
+      } @empty {
+        <p class="empty-state">No users found.</p>
+      }
+    }
+  </div>
+</section>

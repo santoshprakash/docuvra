@@ -39,8 +39,71 @@
         <span>Total versions</span>
         <strong>{{ document.versions.length }} / 5</strong>
       </div>
+      <div>
+        <span>Uploaded by</span>
+        <strong>{{ document.uploadedByName }}</strong>
+      </div>
       <p>Maximum 5 versions allowed</p>
     </div>
+
+    @if (canManageAssignments) {
+      <section class="assignment-panel" aria-labelledby="assignment-title">
+        <div class="assignment-heading">
+          <div>
+            <h2 id="assignment-title">Staff assignments</h2>
+            <p>Assign this document to staff users for their document queue.</p>
+          </div>
+          <div class="assignment-form">
+            <select name="staffUser" [(ngModel)]="selectedStaffUserId" [disabled]="isAssigning || availableStaffUsers.length === 0">
+              <option value="">Select staff</option>
+              @for (user of availableStaffUsers; track user.userId) {
+                <option [value]="user.userId">{{ user.username }} - {{ user.email }}</option>
+              }
+            </select>
+            <button class="btn btn-primary" type="button" [disabled]="!selectedStaffUserId || isAssigning" (click)="assignSelectedStaff()">
+              {{ isAssigning ? 'Assigning' : 'Assign' }}
+            </button>
+          </div>
+        </div>
+
+        @if (assignmentErrorMessage) {
+          <div class="alert alert-error">{{ assignmentErrorMessage }}</div>
+        }
+
+        <div class="assignment-list">
+          @for (assignment of document.assignments; track assignment.assignmentId) {
+            <div class="assignment-row">
+              <span>
+                <strong>{{ assignment.username }}</strong>
+                <small>{{ assignment.email }}</small>
+              </span>
+              <span>Assigned {{ assignment.assignedAt | date: 'medium' }}</span>
+              <button class="text-button" type="button" (click)="removeAssignment(assignment.assignmentId)">Remove</button>
+            </div>
+          } @empty {
+            <p class="assignment-empty">No staff assigned.</p>
+          }
+        </div>
+      </section>
+    }
+
+    @if (authService.currentUser()?.role === 'STAFF') {
+      <section class="assignment-panel">
+        @if (requestStatus === 'assigned') {
+          <p>Assigned to You</p>
+        } @else if (requestStatus === 'pending') {
+          <p>Request Pending</p>
+        } @else if (canRequestAssignment) {
+          <div class="assignment-heading">
+            <p>This document is unassigned.</p>
+            <button class="btn btn-primary" type="button" (click)="requestAssignment()">Request to Add to My Bucket</button>
+          </div>
+        }
+        @if (assignmentErrorMessage) {
+          <div class="alert alert-error">{{ assignmentErrorMessage }}</div>
+        }
+      </section>
+    }
 
     @if (!canUploadNewVersion()) {
       <div class="alert alert-muted">This document already has the maximum allowed 5 versions.</div>

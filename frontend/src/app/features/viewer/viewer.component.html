@@ -25,7 +25,7 @@
   }
 
   <div class="viewer-workspace" [class.pdf-ready]="selectedVersion && !isLoading && !errorMessage">
-    @if (selectedVersion && !isLoading && !errorMessage) {
+    @if (selectedVersion && !isLoading && !errorMessage && canAnnotate) {
       <div class="annotation-toolbar-wrap">
         <app-annotation-toolbar
           [activeTool]="activeTool"
@@ -85,7 +85,7 @@
                     [class.underline]="annotation.annotationType === 'UNDERLINE'"
                     [class.strike]="annotation.annotationType === 'STRIKE_THROUGH'"
                     [style]="annotationStyle(annotation)"
-                    (pointerdown)="startMoveAnnotation($event, annotation, page)"
+                    (pointerdown)="canAnnotate && startMoveAnnotation($event, annotation, page)"
                     (click)="$event.stopPropagation(); selectAnnotation(annotation)"
                   >
                     @if (annotation.annotationType === 'FREEHAND_DRAW') {
@@ -96,7 +96,7 @@
                       <span>+</span>
                     }
 
-                    @if (annotation.annotationId === selectedAnnotationId) {
+                    @if (annotation.annotationId === selectedAnnotationId && canAnnotate) {
                       <span
                         class="resize-handle top-left"
                         (pointerdown)="startResizeAnnotation($event, annotation, page, 'top-left')"
@@ -151,8 +151,12 @@
       <app-comment-panel
         [annotations]="annotations"
         [selectedAnnotationId]="selectedAnnotationId"
+        [canDelete]="canAnnotate"
+        [canReply]="true"
+        [mentionableUsers]="mentionableUsers"
         (annotationSelected)="selectAnnotation($event, false)"
         (commentDeleted)="deleteCommentAndLinkedAnnotation($event.commentId, $event.annotationId)"
+        (replyAdded)="addReply($event)"
       />
     }
   </div>
@@ -182,8 +186,18 @@
           rows="4"
           placeholder="Write a comment"
           [value]="draftComment"
-          (input)="draftComment = commentBox.value"
+          (input)="onDraftCommentInput(commentBox.value, commentBox.selectionStart)"
         ></textarea>
+        @if (mentionSuggestions.length) {
+          <div class="mention-menu" role="listbox" aria-label="Mention users">
+            @for (user of mentionSuggestions; track user.userId) {
+              <button type="button" role="option" (click)="insertMention(user)">
+                <strong>{{ user.username }}</strong>
+                <span>{{ user.email }}</span>
+              </button>
+            }
+          </div>
+        }
         @if (annotationError) {
           <div class="annotation-alert inline">{{ annotationError }}</div>
         }

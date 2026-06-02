@@ -1,15 +1,18 @@
 import { DatePipe } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
+import { UserResponse } from '../../core/models/auth.model';
 import { DocumentDetailsResponse, DocumentVersionResponse } from '../../core/models/document.model';
+import { AuthService } from '../../core/services/auth.service';
 import { DocumentService } from '../../core/services/document.service';
 import { FileSizePipe } from '../../shared/pipes/file-size.pipe';
 
 @Component({
   selector: 'app-document-details',
   standalone: true,
-  imports: [DatePipe, RouterLink, FileSizePipe],
+  imports: [DatePipe, FormsModule, RouterLink, FileSizePipe],
   templateUrl: './document-details.component.html',
   styleUrl: './document-details.component.scss'
 })
@@ -26,18 +29,25 @@ export class DocumentDetailsComponent implements OnInit {
   protected isUploadPanelOpen = false;
   protected deletingVersionId: string | null = null;
   protected failedThumbnailIds = new Set<string>();
+  protected users: UserResponse[] = [];
+  protected selectedStaffUserId = '';
+  protected isAssigning = false;
+  protected assignmentErrorMessage = '';
+  protected requestStatus: 'idle' | 'pending' | 'assigned' = 'idle';
 
   private documentId = '';
 
   constructor(
     private readonly route: ActivatedRoute,
-    private readonly documentService: DocumentService
+    private readonly documentService: DocumentService,
+    protected readonly authService: AuthService
   ) {
   }
 
   ngOnInit(): void {
     this.documentId = this.route.snapshot.paramMap.get('documentId') ?? '';
     this.loadDetails();
+    this.loadUsersForSupervisor();
   }
 
   protected loadDetails(): void {
@@ -56,6 +66,8 @@ export class DocumentDetailsComponent implements OnInit {
           versions: [...document.versions].sort((first, second) => second.versionNumber - first.versionNumber)
         };
         this.failedThumbnailIds.clear();
+        this.selectedStaffUserId = '';
+        this.refreshStaffRequestStatus();
         this.isLoading = false;
       },
       error: () => {
@@ -161,6 +173,99 @@ export class DocumentDetailsComponent implements OnInit {
     return this.isExcel(version)
       ? ['/excel-viewer', this.documentId, version.versionId]
       : ['/viewer', this.documentId, version.versionId];
+  }
+
+  protected get canManageAssignments(): boolean {
+    return this.authService.currentUser()?.role === 'SUPERVISOR';
+  }
+
+  protected get availableStaffUsers(): UserResponse[] {
+    const assignedIds = new Set(this.document?.assignments.map(assignment => assignment.userId) ?? []);
+    return this.users.filter(user => user.role === 'STAFF' && user.active && !assignedIds.has(user.userId));
+  }
+
+  protected get canRequestAssignment(): boolean {
+    return this.authService.currentUser()?.role === 'STAFF'
+      && !!this.document
+      && this.document.assignments.length === 0
+      && this.requestStatus !== 'pending';
+  }
+
+  protected requestAssignment(): void {
+    if (!this.document) {
+      return;
+    }
+    this.assignmentErrorMessage = '';
+    this.documentService.requestAssignment(this.documentId).subscribe({
+      next: () => this.requestStatus = 'pending',
+      error: error => this.assignmentErrorMessage = error?.error?.message ?? 'Unable to request document.'
+    });
+  }
+
+  protected assignSelectedStaff(): void {
+    if (!this.selectedStaffUserId || !this.document) {
+      return;
+    }
+
+    this.isAssigning = true;
+    this.assignmentErrorMessage = '';
+    this.documentService.assignDocument(this.documentId, this.selectedStaffUserId).subscribe({
+      next: assignment => {
+        this.document = {
+          ...this.document!,
+          assignments: [assignment, ...this.document!.assignments.filter(item => item.userId !== assignment.userId)]
+        };
+        this.selectedStaffUserId = '';
+        this.isAssigning = false;
+      },
+      error: error => {
+        this.assignmentErrorMessage = error?.error?.message ?? 'Unable to assign document.';
+        this.isAssigning = false;
+      }
+    });
+  }
+
+  protected removeAssignment(assignmentId: string): void {
+    if (!this.document) {
+      return;
+    }
+
+    this.assignmentErrorMessage = '';
+    this.documentService.removeAssignment(this.documentId, assignmentId).subscribe({
+      next: () => {
+        this.document = {
+          ...this.document!,
+          assignments: this.document!.assignments.filter(item => item.assignmentId !== assignmentId)
+        };
+      },
+      error: error => {
+        this.assignmentErrorMessage = error?.error?.message ?? 'Unable to remove assignment.';
+      }
+    });
+  }
+
+  private loadUsersForSupervisor(): void {
+    this.authService.loadCurrentUser().subscribe({
+      next: user => {
+        if (user.role !== 'SUPERVISOR') {
+          return;
+        }
+        this.authService.listUsers().subscribe({
+          next: users => this.users = users,
+          error: () => this.assignmentErrorMessage = 'Unable to load staff users.'
+        });
+      }
+    });
+  }
+
+  private refreshStaffRequestStatus(): void {
+    const user = this.authService.currentUser();
+    if (!user || user.role !== 'STAFF' || !this.document) {
+      return;
+    }
+    this.requestStatus = this.document.assignments.some(assignment => assignment.userId === user.userId)
+      ? 'assigned'
+      : 'idle';
   }
 
   private setSelectedFile(file: File | null): void {

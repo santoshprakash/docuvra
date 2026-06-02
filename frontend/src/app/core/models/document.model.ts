@@ -24,6 +24,8 @@ export interface DocumentListResponse {
   latestVersionNumber: number;
   latestVersionId: string | null;
   thumbnailUrl: string | null;
+  uploadedByUserId: string | null;
+  uploadedByName: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -32,7 +34,20 @@ export interface DocumentDetailsResponse {
   documentId: string;
   title: string;
   latestVersionNumber: number;
+  uploadedByUserId: string | null;
+  uploadedByName: string;
+  assignments: DocumentAssignmentResponse[];
   versions: DocumentVersionResponse[];
+}
+
+export interface DocumentAssignmentResponse {
+  assignmentId: string;
+  userId: string;
+  username: string;
+  email: string;
+  role: UserRole;
+  assignedAt: string;
+  assignedByName: string | null;
 }
 
 export interface DocumentVersionResponse {
@@ -46,3 +61,4 @@ export interface DocumentVersionResponse {
   thumbnailUrl: string;
   uploadedAt: string;
 }
+import { UserRole } from './auth.model';

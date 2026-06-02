@@ -7,6 +7,8 @@ public record AnnotationCommentResponse(
         UUID commentId,
         UUID annotationId,
         String commentText,
+        UUID createdByUserId,
+        String createdByName,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {

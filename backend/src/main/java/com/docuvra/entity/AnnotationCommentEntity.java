@@ -36,6 +36,12 @@ public class AnnotationCommentEntity {
     @Column(name = "comment_text", nullable = false, columnDefinition = "text")
     private String commentText;
 
+    @Column(name = "created_by_user_id")
+    private java.util.UUID createdByUserId;
+
+    @Column(name = "created_by_name", nullable = false, length = 100)
+    private String createdByName;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 

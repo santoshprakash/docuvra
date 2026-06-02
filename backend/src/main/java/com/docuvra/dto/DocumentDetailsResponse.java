@@ -7,7 +7,9 @@ public record DocumentDetailsResponse(
         UUID documentId,
         String title,
         Integer latestVersionNumber,
+        UUID uploadedByUserId,
+        String uploadedByName,
+        List<DocumentAssignmentResponse> assignments,
         List<DocumentVersionResponse> versions
 ) {
 }
-

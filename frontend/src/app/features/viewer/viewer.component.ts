@@ -9,8 +9,10 @@ import {
   AnnotationTool,
   AnnotationType
 } from '../../core/models/annotation.model';
+import { UserResponse } from '../../core/models/auth.model';
 import { DocumentDetailsResponse, DocumentVersionResponse } from '../../core/models/document.model';
 import { AnnotationService } from '../../core/services/annotation.service';
+import { AuthService } from '../../core/services/auth.service';
 import { DocumentService } from '../../core/services/document.service';
 import { AnnotationToolbarComponent } from './annotation-toolbar/annotation-toolbar.component';
 import { CommentPanelComponent } from './comment-panel/comment-panel.component';
@@ -80,6 +82,10 @@ export class ViewerComponent implements OnInit, OnDestroy {
   protected selectedAnnotationId: string | null = null;
   protected draftAnnotation: AnnotationRequest | null = null;
   protected draftComment = '';
+  protected mentionableUsers: UserResponse[] = [];
+  protected mentionSuggestions: UserResponse[] = [];
+  protected selectedMentionUserIds = new Set<string>();
+  protected mentionStartIndex = -1;
   protected isSavingAnnotation = false;
   protected annotationError = '';
   protected drawPreview: AnnotationRequest | null = null;
@@ -102,13 +108,15 @@ export class ViewerComponent implements OnInit, OnDestroy {
     private readonly route: ActivatedRoute,
     private readonly router: Router,
     private readonly documentService: DocumentService,
-    private readonly annotationService: AnnotationService
+    private readonly annotationService: AnnotationService,
+    private readonly authService: AuthService
   ) {
   }
 
   ngOnInit(): void {
     this.documentId = this.route.snapshot.paramMap.get('documentId') ?? '';
     this.versionId = this.route.snapshot.paramMap.get('versionId') ?? '';
+    this.loadMentionableUsers();
     this.loadMetadata();
   }
 
@@ -123,6 +131,11 @@ export class ViewerComponent implements OnInit, OnDestroy {
 
     return this.selectedVersion.mimeType.toLowerCase() === 'application/pdf'
       || this.selectedVersion.fileName.toLowerCase().endsWith('.pdf');
+  }
+
+  protected get canAnnotate(): boolean {
+    const role = this.authService.currentUser()?.role;
+    return role === 'STAFF' || role === 'SUPERVISOR';
   }
 
   protected pageAnnotations(pageNumber: number): AnnotationResponse[] {
@@ -210,7 +223,7 @@ export class ViewerComponent implements OnInit, OnDestroy {
   }
 
   protected onOverlayPointerDown(page: PdfPageView, event: PointerEvent): void {
-    if (this.activeTool === 'SELECT' || this.draftAnnotation) {
+    if (!this.canAnnotate || this.activeTool === 'SELECT' || this.draftAnnotation) {
       return;
     }
 
@@ -335,6 +348,19 @@ export class ViewerComponent implements OnInit, OnDestroy {
     });
   }
 
+  protected addReply(event: { annotationId: string; commentText: string; mentionedUserIds: string[] }): void {
+    this.annotationService.createComment(event.annotationId, event.commentText, event.mentionedUserIds).subscribe({
+      next: comment => {
+        this.annotations = this.annotations.map(annotation => annotation.annotationId === event.annotationId
+          ? { ...annotation, comments: [...annotation.comments, comment] }
+          : annotation);
+      },
+      error: error => {
+        this.annotationError = error?.error?.message ?? 'Unable to save reply.';
+      }
+    });
+  }
+
   protected startMoveAnnotation(event: PointerEvent, annotation: AnnotationResponse, page: PdfPageView): void {
     if (this.activeTool !== 'SELECT') {
       return;
@@ -388,7 +414,7 @@ export class ViewerComponent implements OnInit, OnDestroy {
 
   @HostListener('window:keydown', ['$event'])
   protected onWindowKeyDown(event: KeyboardEvent): void {
-    if ((event.key === 'Delete' || event.key === 'Backspace') && this.selectedAnnotationId && !this.draftAnnotation) {
+    if (this.canAnnotate && (event.key === 'Delete' || event.key === 'Backspace') && this.selectedAnnotationId && !this.draftAnnotation) {
       event.preventDefault();
       this.deleteSelectedAnnotation();
     }
@@ -404,7 +430,8 @@ export class ViewerComponent implements OnInit, OnDestroy {
     this.annotationError = '';
     this.annotationService.createAnnotation(this.documentId, this.versionId, {
       ...this.draftAnnotation,
-      commentText: this.draftComment.trim()
+      commentText: this.draftComment.trim(),
+      mentionedUserIds: [...this.selectedMentionUserIds]
     }).subscribe({
       next: annotation => {
         this.annotations = [...this.annotations, annotation];
@@ -412,8 +439,8 @@ export class ViewerComponent implements OnInit, OnDestroy {
         this.closeDraft();
         this.selectAnnotation(annotation);
       },
-      error: () => {
-        this.annotationError = 'Unable to save annotation.';
+      error: error => {
+        this.annotationError = error?.error?.message ?? 'Unable to save annotation.';
         this.isSavingAnnotation = false;
       }
     });
@@ -422,6 +449,9 @@ export class ViewerComponent implements OnInit, OnDestroy {
   protected closeDraft(): void {
     this.draftAnnotation = null;
     this.draftComment = '';
+    this.mentionSuggestions = [];
+    this.selectedMentionUserIds.clear();
+    this.mentionStartIndex = -1;
     this.drawPreview = null;
     this.annotationError = '';
     this.isSavingAnnotation = false;
@@ -465,6 +495,44 @@ export class ViewerComponent implements OnInit, OnDestroy {
     const width = Math.max(1, (annotation.widthPercent / 100) * page.width);
     const height = Math.max(1, (annotation.heightPercent / 100) * page.height);
     return `0 0 ${width} ${height}`;
+  }
+
+  protected onDraftCommentInput(value: string, caretIndex: number | null): void {
+    this.draftComment = value;
+    this.updateMentionSuggestions(caretIndex ?? value.length);
+  }
+
+  protected insertMention(user: UserResponse): void {
+    const startIndex = this.mentionStartIndex >= 0 ? this.mentionStartIndex : this.draftComment.length;
+    const before = this.draftComment.slice(0, startIndex);
+    const after = this.draftComment.slice(startIndex).replace(/^@[A-Za-z0-9._-]*/, '');
+    this.draftComment = `${before}@${user.username} ${after}`.replace(/\s{2,}/g, ' ');
+    this.selectedMentionUserIds.add(user.userId);
+    this.mentionSuggestions = [];
+    this.mentionStartIndex = -1;
+  }
+
+  private loadMentionableUsers(): void {
+    this.authService.listMentionableUsers().subscribe({
+      next: users => this.mentionableUsers = users,
+      error: () => this.mentionableUsers = []
+    });
+  }
+
+  private updateMentionSuggestions(caretIndex: number): void {
+    const textBeforeCaret = this.draftComment.slice(0, caretIndex);
+    const match = /(^|\s)@([A-Za-z0-9._-]*)$/.exec(textBeforeCaret);
+    if (!match) {
+      this.mentionSuggestions = [];
+      this.mentionStartIndex = -1;
+      return;
+    }
+
+    const query = match[2].toLowerCase();
+    this.mentionStartIndex = caretIndex - query.length - 1;
+    this.mentionSuggestions = this.mentionableUsers
+      .filter(user => user.username.toLowerCase().includes(query) || user.email.toLowerCase().includes(query))
+      .slice(0, 8);
   }
 
   private loadMetadata(): void {
@@ -561,7 +629,10 @@ export class ViewerComponent implements OnInit, OnDestroy {
   }
 
   private async fetchViewPdf(): Promise<Uint8Array> {
-    const response = await fetch(this.documentService.getViewUrl(this.documentId, this.versionId));
+    const response = await fetch(
+      this.documentService.getViewUrl(this.documentId, this.versionId),
+      this.documentService.getAuthenticatedFetchOptions()
+    );
     if (response.ok) {
       return new Uint8Array(await response.arrayBuffer());
     }

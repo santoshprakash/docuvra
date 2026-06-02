@@ -1,0 +1,9 @@
+package com.docuvra.enums;
+
+public enum NotificationType {
+    COMMENT_MENTION,
+    DOCUMENT_ASSIGNED,
+    ASSIGNMENT_REQUEST_CREATED,
+    ASSIGNMENT_REQUEST_APPROVED,
+    ASSIGNMENT_REQUEST_REJECTED
+}

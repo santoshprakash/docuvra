@@ -9,6 +9,8 @@ public record DocumentListResponse(
         Integer latestVersionNumber,
         UUID latestVersionId,
         String thumbnailUrl,
+        UUID uploadedByUserId,
+        String uploadedByName,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {

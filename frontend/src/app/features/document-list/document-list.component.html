@@ -29,6 +29,7 @@
             <tr>
               <th>Thumbnail</th>
               <th>Document name</th>
+              <th>Uploaded by</th>
               <th>Latest version</th>
               <th>Created</th>
               <th>Updated</th>
@@ -61,6 +62,7 @@
                   </a>
                   <span>{{ document.documentId }}</span>
                 </td>
+                <td>{{ document.uploadedByName }}</td>
                 <td>V{{ document.latestVersionNumber }}</td>
                 <td>{{ document.createdAt | date: 'mediumDate' }}</td>
                 <td>{{ document.updatedAt | date: 'medium' }}</td>
@@ -105,6 +107,7 @@
                   <h2>{{ document.title }}</h2>
                 </a>
                 <p>{{ document.documentId }}</p>
+                <p>Uploaded by {{ document.uploadedByName }}</p>
               </div>
             </div>
             <dl>

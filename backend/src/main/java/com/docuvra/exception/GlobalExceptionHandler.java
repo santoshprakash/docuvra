@@ -18,6 +18,22 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.NOT_FOUND, "NOT_FOUND", exception.getMessage(), request);
     }
 
+    @ExceptionHandler(AuthException.class)
+    public ResponseEntity<ErrorResponse> handleAuth(AuthException exception, HttpServletRequest request) {
+        return buildResponse(HttpStatus.UNAUTHORIZED, "AUTH_ERROR", exception.getMessage(), request);
+    }
+
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ErrorResponse> handleForbidden(ForbiddenException exception, HttpServletRequest request) {
+        return buildResponse(HttpStatus.FORBIDDEN, "FORBIDDEN", exception.getMessage(), request);
+    }
+
+    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleConflict(Exception exception, HttpServletRequest request) {
+        return buildResponse(HttpStatus.CONFLICT, "DUPLICATE_USER",
+                "Username must be unique. Email and mobile must be unique for the selected role.", request);
+    }
+
     @ExceptionHandler(MaxVersionLimitException.class)
     public ResponseEntity<ErrorResponse> handleMaxVersion(MaxVersionLimitException exception, HttpServletRequest request) {
         return buildResponse(HttpStatus.BAD_REQUEST, "MAX_VERSION_LIMIT", exception.getMessage(), request);

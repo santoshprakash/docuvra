@@ -1,6 +1,9 @@
 package com.docuvra.controller;
 
+import com.docuvra.dto.AssignDocumentRequest;
+import com.docuvra.dto.AssignmentRequestResponse;
 import com.docuvra.dto.ConvertedStatusResponse;
+import com.docuvra.dto.DocumentAssignmentResponse;
 import com.docuvra.dto.DocumentDetailsResponse;
 import com.docuvra.dto.DocumentListResponse;
 import com.docuvra.dto.DocumentUploadResponse;
@@ -8,6 +11,8 @@ import com.docuvra.dto.ThumbnailResult;
 import com.docuvra.dto.UploadNewVersionResponse;
 import com.docuvra.entity.DocumentVersionEntity;
 import com.docuvra.service.DocumentService;
+import com.docuvra.service.DocumentAssignmentService;
+import com.docuvra.service.AssignmentRequestService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -21,9 +26,11 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import jakarta.validation.Valid;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
@@ -40,6 +47,8 @@ import java.util.UUID;
 public class DocumentController {
 
     private final DocumentService documentService;
+    private final DocumentAssignmentService documentAssignmentService;
+    private final AssignmentRequestService assignmentRequestService;
 
     @Operation(summary = "Upload a fresh document")
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -68,6 +77,56 @@ public class DocumentController {
     @GetMapping("/{documentId}")
     public DocumentDetailsResponse getDocumentDetails(@PathVariable UUID documentId) {
         return documentService.getDocumentDetails(documentId);
+    }
+
+    @Operation(summary = "List document assignments")
+    @GetMapping("/{documentId}/assignments")
+    public List<DocumentAssignmentResponse> listAssignments(@PathVariable UUID documentId) {
+        return documentAssignmentService.listAssignments(documentId);
+    }
+
+    @Operation(summary = "Assign a document to a staff user")
+    @PostMapping("/{documentId}/assignments")
+    @ResponseStatus(HttpStatus.CREATED)
+    public DocumentAssignmentResponse assignDocument(
+            @PathVariable UUID documentId,
+            @Valid @RequestBody AssignDocumentRequest request
+    ) {
+        return documentAssignmentService.assign(documentId, request);
+    }
+
+    @PostMapping("/{documentId}/assign")
+    @ResponseStatus(HttpStatus.CREATED)
+    public DocumentAssignmentResponse assignDocumentAlias(
+            @PathVariable UUID documentId,
+            @Valid @RequestBody AssignDocumentRequest request
+    ) {
+        return documentAssignmentService.assign(documentId, request);
+    }
+
+    @Operation(summary = "Remove a document assignment")
+    @DeleteMapping("/{documentId}/assignments/{assignmentId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void removeAssignment(
+            @PathVariable UUID documentId,
+            @PathVariable UUID assignmentId
+    ) {
+        documentAssignmentService.removeAssignment(documentId, assignmentId);
+    }
+
+    @DeleteMapping("/{documentId}/assign/{staffUserId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void removeAssignmentByStaff(
+            @PathVariable UUID documentId,
+            @PathVariable UUID staffUserId
+    ) {
+        documentAssignmentService.removeAssignmentByStaff(documentId, staffUserId);
+    }
+
+    @PostMapping("/{documentId}/assignment-requests")
+    @ResponseStatus(HttpStatus.CREATED)
+    public AssignmentRequestResponse requestAssignment(@PathVariable UUID documentId) {
+        return assignmentRequestService.requestDocument(documentId);
     }
 
     @Operation(summary = "Stream a document version for inline viewing")

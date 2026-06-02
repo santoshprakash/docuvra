@@ -360,6 +360,42 @@
   }
 }
 
+.mention-menu {
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  box-shadow: var(--shadow-soft);
+  display: grid;
+  margin-top: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.mention-menu button {
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--color-border);
+  cursor: pointer;
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  text-align: left;
+
+  &:last-child {
+    border-bottom: 0;
+  }
+
+  &:hover {
+    background: #f8fafc;
+  }
+
+  span {
+    color: var(--color-text-secondary);
+    font-size: 12px;
+    overflow-wrap: anywhere;
+  }
+}
+
 .dialog-actions {
   display: flex;
   gap: 10px;

@@ -5,17 +5,23 @@ import com.docuvra.dto.DocumentListResponse;
 import com.docuvra.dto.DocumentUploadResponse;
 import com.docuvra.dto.DocumentVersionResponse;
 import com.docuvra.dto.ConvertedStatusResponse;
+import com.docuvra.dto.DocumentAssignmentResponse;
 import com.docuvra.dto.ThumbnailResult;
 import com.docuvra.dto.UploadNewVersionResponse;
 import com.docuvra.entity.DocumentEntity;
 import com.docuvra.entity.DocumentVersionEntity;
+import com.docuvra.entity.UserEntity;
+import com.docuvra.enums.DocumentAssignmentStatus;
 import com.docuvra.enums.DocumentVersionStatus;
+import com.docuvra.enums.UserRole;
 import com.docuvra.exception.DocumentNotFoundException;
+import com.docuvra.exception.ForbiddenException;
 import com.docuvra.exception.FileStorageException;
 import com.docuvra.exception.InvalidFileException;
 import com.docuvra.exception.LastVersionDeleteException;
 import com.docuvra.exception.MaxVersionLimitException;
 import com.docuvra.exception.VersionNotFoundException;
+import com.docuvra.repository.DocumentAssignmentRepository;
 import com.docuvra.repository.DocumentRepository;
 import com.docuvra.repository.DocumentVersionRepository;
 import lombok.RequiredArgsConstructor;
@@ -42,10 +48,13 @@ public class DocumentService {
 
     private final DocumentRepository documentRepository;
     private final DocumentVersionRepository documentVersionRepository;
+    private final DocumentAssignmentRepository documentAssignmentRepository;
     private final FileStorageService fileStorageService;
     private final ConvertedFileStorageService convertedFileStorageService;
     private final DocumentConversionService documentConversionService;
     private final ThumbnailService thumbnailService;
+    private final CurrentUserService currentUserService;
+    private final DocumentAccessService documentAccessService;
 
     @Transactional
     public DocumentUploadResponse uploadFreshDocument(MultipartFile file) {
@@ -64,6 +73,8 @@ public class DocumentService {
         DocumentEntity document = DocumentEntity.builder()
                 .id(documentId)
                 .title(title)
+                .uploadedByUserId(currentUserService.currentUserIdOrNull())
+                .uploadedByName(currentUserService.currentUsername())
                 .latestVersionNumber(1)
                 .createdAt(now)
                 .updatedAt(now)
@@ -105,6 +116,7 @@ public class DocumentService {
 
         DocumentEntity document = documentRepository.findById(documentId)
                 .orElseThrow(() -> new DocumentNotFoundException(documentId));
+        ensureCanAccess(document);
 
         long versionCount = documentVersionRepository.countByDocumentId(documentId);
         if (versionCount >= MAX_VERSIONS_PER_DOCUMENT) {
@@ -158,7 +170,13 @@ public class DocumentService {
 
     @Transactional(readOnly = true)
     public List<DocumentListResponse> listDocuments() {
-        return documentRepository.findAllByOrderByUpdatedAtDesc()
+        UserEntity user = currentUserService.currentUserEntity();
+        List<DocumentEntity> documents = switch (user.getRole()) {
+            case SUPERVISOR -> documentRepository.findAllByOrderByUpdatedAtDesc();
+            case NORMAL_USER -> documentRepository.findAllByUploadedByUserIdOrderByUpdatedAtDesc(user.getId());
+            case STAFF -> documentRepository.findStaffVisibleDocuments(user.getId());
+        };
+        return documents
                 .stream()
                 .map(this::toListResponse)
                 .toList();
@@ -168,6 +186,7 @@ public class DocumentService {
     public DocumentDetailsResponse getDocumentDetails(UUID documentId) {
         DocumentEntity document = documentRepository.findById(documentId)
                 .orElseThrow(() -> new DocumentNotFoundException(documentId));
+        ensureCanAccess(document);
         List<DocumentVersionResponse> versions = documentVersionRepository.findByDocumentIdOrderByVersionNumberDesc(documentId)
                 .stream()
                 .map(this::toVersionResponse)
@@ -177,6 +196,9 @@ public class DocumentService {
                 document.getId(),
                 document.getTitle(),
                 document.getLatestVersionNumber(),
+                document.getUploadedByUserId(),
+                document.getUploadedByName(),
+                activeAssignments(documentId),
                 versions
         );
     }
@@ -186,6 +208,7 @@ public class DocumentService {
         if (!documentRepository.existsById(documentId)) {
             throw new DocumentNotFoundException(documentId);
         }
+        documentRepository.findById(documentId).ifPresent(this::ensureCanAccess);
 
         return documentVersionRepository.findByDocumentIdAndId(documentId, versionId)
                 .orElseThrow(() -> new VersionNotFoundException(documentId, versionId));
@@ -255,6 +278,7 @@ public class DocumentService {
     public void deleteDocument(UUID documentId) {
         DocumentEntity document = documentRepository.findById(documentId)
                 .orElseThrow(() -> new DocumentNotFoundException(documentId));
+        ensureCanDelete(document);
 
         documentRepository.delete(document);
         fileStorageService.deleteDocumentFolder(documentId);
@@ -265,6 +289,7 @@ public class DocumentService {
     @Transactional
     public void deleteVersion(UUID documentId, UUID versionId) {
         DocumentVersionEntity version = getVersion(documentId, versionId);
+        ensureCanDelete(version.getDocument());
         long versionCount = documentVersionRepository.countByDocumentId(documentId);
 
         if (versionCount <= 1) {
@@ -342,6 +367,8 @@ public class DocumentService {
                 document.getLatestVersionNumber(),
                 latestVersionId,
                 latestVersionId == null ? null : thumbnailUrl(document.getId(), latestVersionId),
+                document.getUploadedByUserId(),
+                document.getUploadedByName(),
                 document.getCreatedAt(),
                 document.getUpdatedAt()
         );
@@ -363,5 +390,42 @@ public class DocumentService {
 
     private String thumbnailUrl(UUID documentId, UUID versionId) {
         return "/api/documents/" + documentId + "/versions/" + versionId + "/thumbnail";
+    }
+
+    private List<DocumentAssignmentResponse> activeAssignments(UUID documentId) {
+        return documentAssignmentRepository.findAllByDocumentIdAndStatusOrderByCreatedAtDesc(documentId, DocumentAssignmentStatus.ASSIGNED)
+                .stream()
+                .map(assignment -> new DocumentAssignmentResponse(
+                        assignment.getId(),
+                        assignment.getAssignedToUser().getId(),
+                        assignment.getAssignedToUser().getUsername(),
+                        assignment.getAssignedToUser().getEmail(),
+                        assignment.getAssignedToUser().getRole(),
+                        assignment.getCreatedAt(),
+                        assignment.getAssignedByUser() == null ? null : assignment.getAssignedByUser().getUsername()
+                ))
+                .toList();
+    }
+
+    private void ensureCanAccess(DocumentEntity document) {
+        UserEntity user = currentUserService.currentUserEntity();
+        if (user.getRole() == UserRole.SUPERVISOR) {
+            return;
+        }
+        if (user.getRole() == UserRole.NORMAL_USER && user.getId().equals(document.getUploadedByUserId())) {
+            return;
+        }
+        if (user.getRole() == UserRole.STAFF && documentAccessService.canViewDocument(user, document)) {
+            return;
+        }
+        throw new ForbiddenException("You do not have access to this document.");
+    }
+
+    private void ensureCanDelete(DocumentEntity document) {
+        UserEntity user = currentUserService.currentUserEntity();
+        if (user.getRole() == UserRole.SUPERVISOR || user.getId().equals(document.getUploadedByUserId())) {
+            return;
+        }
+        throw new ForbiddenException("You do not have permission to delete this document.");
     }
 }

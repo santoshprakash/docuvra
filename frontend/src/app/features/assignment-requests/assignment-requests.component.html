@@ -1,0 +1,39 @@
+<section class="requests-page">
+  <header>
+    <div>
+      <p>Supervisor</p>
+      <h1>Assignment requests</h1>
+    </div>
+  </header>
+
+  @if (errorMessage) {
+    <div class="alert">{{ errorMessage }}</div>
+  }
+
+  @if (isLoading) {
+    <p class="empty">Loading requests...</p>
+  } @else {
+    <div class="request-list">
+      @for (request of requests; track request.requestId) {
+        <article class="request-card">
+          <div>
+            <h2>{{ request.documentTitle }}</h2>
+            <p>{{ request.requestedByUsername }} requested access on {{ request.requestedAt | date: 'medium' }}</p>
+            <a [routerLink]="['/documents', request.documentId]">Open document</a>
+          </div>
+          <textarea
+            rows="2"
+            placeholder="Reject comment"
+            [(ngModel)]="rejectComments[request.requestId]"
+          ></textarea>
+          <div class="actions">
+            <button class="approve" type="button" (click)="approve(request)">Approve</button>
+            <button class="reject" type="button" (click)="reject(request)">Reject</button>
+          </div>
+        </article>
+      } @empty {
+        <p class="empty">No pending assignment requests.</p>
+      }
+    </div>
+  }
+</section>

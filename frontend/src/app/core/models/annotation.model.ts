@@ -12,6 +12,8 @@ export interface AnnotationCommentResponse {
   commentId: string;
   annotationId: string;
   commentText: string;
+  createdByUserId: string | null;
+  createdByName: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -33,7 +35,10 @@ export interface AnnotationRequest {
   strokeWidth: number;
   selectedText?: string | null;
   drawingData?: string | null;
+  createdByUserId?: string | null;
+  createdByName?: string;
   commentText?: string | null;
+  mentionedUserIds?: string[];
 }
 
 export interface AnnotationResponse extends AnnotationRequest {
@@ -42,5 +47,7 @@ export interface AnnotationResponse extends AnnotationRequest {
   versionId: string;
   createdAt: string;
   updatedAt: string;
+  createdByUserId: string | null;
+  createdByName: string;
   comments: AnnotationCommentResponse[];
 }

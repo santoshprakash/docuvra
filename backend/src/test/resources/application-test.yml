@@ -1,0 +1,13 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+docuvra:
+  security:
+    jwt-secret: test-secret-with-enough-length-for-hmac-signing
+    jwt-expiration-minutes: 60
+  converter:
+    timeout-seconds: 5

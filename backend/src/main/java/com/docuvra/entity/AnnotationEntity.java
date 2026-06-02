@@ -94,6 +94,12 @@ public class AnnotationEntity {
     @Column(name = "drawing_data", columnDefinition = "text")
     private String drawingData;
 
+    @Column(name = "created_by_user_id")
+    private UUID createdByUserId;
+
+    @Column(name = "created_by_name", nullable = false, length = 100)
+    private String createdByName;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
